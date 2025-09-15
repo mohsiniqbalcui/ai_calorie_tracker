@@ -73,7 +73,10 @@ class _DailyTrackerState extends State<DailyTracker> {
           CircularPercentIndicator(
             radius: 80.0,
             lineWidth: 8.0,
-            percent: widget.calories / targetCalories,
+            percent: (targetCalories > 0
+                    ? (widget.calories / targetCalories)
+                    : 0.0)
+                .clamp(0.0, 1.0),
             center: Column(
               mainAxisSize: MainAxisSize.min,
               children: [

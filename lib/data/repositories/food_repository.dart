@@ -38,6 +38,15 @@ class FoodRepository {
     return await _foodService.detectFoodAndCalories(image);
   }
 
+  Future<Either<String, FoodItem>> detectFoodFromText(String foodDescription) async {
+    print('=== REPOSITORY DETECTFOODFROMTEXT CALLED ===');
+    print('Food description: "$foodDescription"');
+    print('Calling food service...');
+    final result = await _foodService.detectFoodFromText(foodDescription);
+    print('Food service result received');
+    return result;
+  }
+
     Future<void> deleteFoodItem(FoodItem item) async {
     final String key = 'food_log_${item.timestamp.toIso8601String().split('T')[0]}';
     List<FoodItem> currentLog = await getDailyFoodLog(item.timestamp);

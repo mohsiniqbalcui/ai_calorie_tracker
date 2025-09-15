@@ -139,6 +139,34 @@ class FoodLogCubit extends Cubit<FoodLogState> {
     );
   }
 
+  Future<void> addMealFromText(String foodDescription) async {
+    print('=== ADDMELFROMTEXT CALLED ===');
+    print('Food description: "$foodDescription"');
+    print('Description length: ${foodDescription.length}');
+    
+    emit(state.copyWith(isLoading: true));
+    print('Calling repository.detectFoodFromText...');
+    final result = await _repository.detectFoodFromText(foodDescription);
+    print('Repository result received');
+    result.fold(
+      (failure) {
+        print('Repository returned failure: $failure');
+        // Emit error message
+        emit(state.copyWith(error: failure, successMessage: null, isLoading: false));
+      },
+      (meal) async {
+        print('Repository returned meal: ${meal.name}');
+        await addMeal(meal);
+        // Emit success message
+        emit(state.copyWith(
+          error: null,
+          successMessage: 'Food "${meal.name}" detected successfully and added to the log.',
+          isLoading: false,
+        ));
+      },
+    );
+  }
+
   void clearMessages() {
     emit(FoodLogState(
       meals: state.meals,

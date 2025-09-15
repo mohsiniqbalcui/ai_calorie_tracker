@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter/foundation.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
 import 'dart:convert';
 import '../cubit/food_log_cubit.dart';
 import '../widgets/daily_tracker.dart';
 import '../widgets/meal_list.dart';
 import '../widgets/alert_message_widget.dart';
+import '../widgets/text_input_dialog.dart';
+import '../widgets/speech_input_dialog.dart';
+import '../widgets/simple_speech_dialog.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -56,7 +61,70 @@ class _HomeScreenState extends State<HomeScreen> {
               getImage(ImageSource.gallery);
             },
           ),
+          ListTile(
+            leading: Icon(Icons.edit),
+            title: Text('Text Input'),
+            onTap: () {
+              Navigator.pop(context);
+              _showTextInputDialog(context);
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.mic),
+            title: Text('Voice Input'),
+            subtitle: kIsWeb ? Text('Not available on web') : null,
+            enabled: !kIsWeb,
+            onTap: kIsWeb ? null : () {
+              Navigator.pop(context);
+              _showSpeechInputDialog(context);
+            },
+          ),
         ],
+      ),
+    );
+  }
+
+  Future<bool> _ensurePermissions() async {
+    if (kIsWeb) return true; // Web handles permissions differently
+
+    final Map<Permission, PermissionStatus> statuses = await [
+      Permission.camera,
+      Permission.microphone,
+      // On Android 13+ use photos permission is implicit via picker; request storage for older devices
+      Permission.storage,
+    ].request();
+
+    final allGranted = statuses.values.every((s) => s.isGranted);
+
+    if (!allGranted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please grant Camera, Microphone, and Storage permissions.')),
+      );
+    }
+
+    return allGranted;
+  }
+
+  void _showTextInputDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => TextInputDialog(
+        title: 'Add Food Item',
+        hintText: 'Describe the food you ate (e.g., "Grilled chicken breast with rice")',
+        onSubmitted: (text) async {
+          await context.read<FoodLogCubit>().addMealFromText(text);
+        },
+      ),
+    );
+  }
+
+  void _showSpeechInputDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => SimpleSpeechDialog(
+        onSubmitted: (text) async {
+          await context.read<FoodLogCubit>().addMealFromText(text);
+        },
       ),
     );
   }
@@ -115,8 +183,13 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => showImageSourceActionSheet(context),
-        child: Icon(Icons.add_a_photo),
+        onPressed: () async {
+          final ok = await _ensurePermissions();
+          if (ok) {
+            showImageSourceActionSheet(context);
+          }
+        },
+        child: Icon(Icons.add),
       ),
     );
   }

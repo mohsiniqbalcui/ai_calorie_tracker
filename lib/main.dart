@@ -6,11 +6,13 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'data/repositories/food_repository.dart';
 import 'data/services/food_service.dart';
+import 'data/local/preference_manager.dart';
 import 'presentation/cubit/food_log_cubit.dart';
 import 'presentation/screens/home_screen.dart';
 import 'presentation/screens/onboarding_screen.dart';
 import 'presentation/screens/main_screen.dart';
 import 'presentation/screens/settings_screen.dart';
+import 'presentation/screens/splash_screen.dart';
 
 Future<void> _loadEnvironmentFile() async {
   try {
@@ -28,7 +30,13 @@ void main() async {
   
   // Initialize SharedPreferences
   final prefs = await SharedPreferences.getInstance();
-  final showOnboarding = !(prefs.getBool('onboarding_complete') ?? false);
+  final preferenceManager = PreferenceManager(prefs);
+  
+  // Check if user has already completed onboarding by checking if user data exists
+  final userData = preferenceManager.getUserData();
+  final onboardingComplete = prefs.getBool('onboarding_complete') ?? false;
+  // Skip onboarding if either user data exists OR onboarding was marked complete previously
+  final showOnboarding = !(onboardingComplete || userData != null);
 
   // Initialize services and repositories
   final foodService = FoodService();
@@ -60,7 +68,10 @@ class MyApp extends StatelessWidget {
           primarySwatch: Colors.blue,
           visualDensity: VisualDensity.adaptivePlatformDensity,
         ),
-        home: showOnboarding ? OnboardingScreen() : MainScreen(),
+        home: SplashScreen(
+          nextBuilder: () => showOnboarding ? OnboardingScreen() : MainScreen(),
+          durationMs: 3000,
+        ),
         routes: {
           '/main': (context) => MainScreen(),
           '/home': (context) => HomeScreen(), 

@@ -66,8 +66,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       carbsGoal: macroGoals['carbsGoal']!,
     );
 
-    final prefManager = PreferenceManager(await SharedPreferences.getInstance());
+    final prefs = await SharedPreferences.getInstance();
+    final prefManager = PreferenceManager(prefs);
     await prefManager.saveUserData(userData);
+    
+    // Mark onboarding as complete
+    await prefs.setBool('onboarding_complete', true);
   }
 
   void _nextPage() {
@@ -84,41 +88,50 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
   }
 
-  void _skipToMain() {
+  void _skipToMain() async {
+    // Mark onboarding as complete even when skipped
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('onboarding_complete', true);
     Navigator.pushReplacementNamed(context, '/main');
   }
 
   Widget _buildPage(String title, String assetPath, Widget inputField) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Expanded(
-            flex: 7,
-            child: Image.asset(
-              assetPath,
-              fit: BoxFit.cover,
-              width: double.infinity,
-            ),
-          ),
-          SizedBox(height: 16),
-          Expanded(
-            flex: 3,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+        return SingleChildScrollView(
+          physics: AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + bottomInset),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight - bottomInset),
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleMedium,
-                  textAlign: TextAlign.center,
+                SizedBox(
+                  height: (constraints.maxHeight - bottomInset) * 0.55,
+                  child: Image.asset(
+                    assetPath,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                  ),
                 ),
-                SizedBox(height: 24),
-                inputField,
+                SizedBox(height: 16),
+                Column(
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.titleMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 24),
+                    inputField,
+                  ],
+                ),
               ],
             ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 

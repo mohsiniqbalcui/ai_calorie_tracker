@@ -21,43 +21,152 @@ class FoodService {
     // Initialize the Gemini instance
     Gemini.init(apiKey: _apiKey);
   }
-Future<Either<String, FoodItem>> detectFoodAndCalories(File imageFile) async {
+  Future<Either<String, FoodItem>> detectFoodAndCalories(File imageFile) async {
   try {
     if (!imageFile.existsSync()) {
       return Left('File not found: ${imageFile.path}');
     }
 
-    final response = await Gemini.instance.textAndImage(
-      text: 'Analyze this image and identify the food. '
-          'Estimate its calories, protein, carbs, and fat. '
-          'Return JSON in this format: {"name": "food name", "calories": 100, "protein": 10, "carbs": 20, "fat": 5}',
-      images: [imageFile.readAsBytesSync()],
-    );
+      final response = await Gemini.instance.textAndImage(
+        text: 'Analyze this image and identify the food. '
+            'Estimate its calories, protein, carbs, and fat. '
+            'Return ONLY a valid JSON object in this exact format: {"name": "food name", "calories": 100, "protein": 10, "carbs": 20, "fat": 5} '
+            'Do not include any other text, explanations, or formatting. Just the JSON object.',
+        images: [imageFile.readAsBytesSync()],
+      );
 
     final output = response?.output;
     if (output == null || output.isEmpty) {
       return Left('No response output from Gemini API');
     }
 
-    final match = RegExp(r'\{.*\}').firstMatch(output);
-    if (match == null) {
+    // Try to find JSON in the output, handling various formats
+    String jsonString = '';
+    
+    // First, try to find complete JSON object
+    final completeMatch = RegExp(r'\{.*\}').firstMatch(output);
+    if (completeMatch != null) {
+      jsonString = completeMatch.group(0)!;
+    } else {
+      // If no complete JSON found, try to extract and fix malformed JSON
+      final jsonStart = output.indexOf('"name"');
+      if (jsonStart != -1) {
+        // Find the end of the JSON object
+        final jsonEnd = output.indexOf('}', jsonStart);
+        if (jsonEnd != -1) {
+          // Extract the JSON part and add missing opening brace
+          jsonString = '{' + output.substring(jsonStart, jsonEnd + 1);
+        }
+      }
+    }
+    
+    if (jsonString.isEmpty) {
       return Left('No valid JSON found in output: $output');
     }
 
-    final foodData = jsonDecode(match.group(0)!);
+    final foodData = jsonDecode(jsonString);
 
-    return Right(FoodItem(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      name: foodData['name'],
-      calories: foodData['calories'].toDouble(),
-      protein: foodData['protein'].toDouble(),
-      carbs: foodData['carbs'].toDouble(),
-      fat: foodData['fat'].toDouble(),
-      quantity: 100.0,
-      timestamp: DateTime.now(),
-    ));
-  } catch (e) {
-    return Left('Failed to detect food: ${e.toString()}');
+    // Validate that all required fields are present
+    if (!foodData.containsKey('name') || 
+        !foodData.containsKey('calories') || 
+        !foodData.containsKey('protein') || 
+        !foodData.containsKey('carbs') || 
+        !foodData.containsKey('fat')) {
+      return Left('Invalid JSON structure: missing required fields');
+    }
+
+      final foodItem = FoodItem(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        name: foodData['name'].toString(),
+        calories: (foodData['calories'] as num).toDouble(),
+        protein: (foodData['protein'] as num).toDouble(),
+        carbs: (foodData['carbs'] as num).toDouble(),
+        fat: (foodData['fat'] as num).toDouble(),
+        quantity: 100.0,
+        timestamp: DateTime.now(),
+      );
+      print('Successfully created food item: ${foodItem.name}');
+      return Right(foodItem);
+    } catch (e) {
+      print('Error in detectFoodAndCalories: $e');
+      return Left('Failed to detect food: ${e.toString()}');
+    }
   }
-}
+
+  Future<Either<String, FoodItem>> detectFoodFromText(String foodDescription) async {
+    print('=== FOOD SERVICE DETECTFOODFROMTEXT CALLED ===');
+    print('Food description: "$foodDescription"');
+    try {
+      if (foodDescription.trim().isEmpty) {
+        print('Food description is empty, returning error');
+        return Left('Food description cannot be empty');
+      }
+
+      print('Calling Gemini API...');
+      final response = await Gemini.instance.text(
+        'Analyze this food description and estimate its nutritional values. '
+        'Food: "$foodDescription" '
+        'Estimate calories, protein, carbs, and fat for a typical serving. '
+        'Return ONLY a valid JSON object in this exact format: {"name": "food name", "calories": 100, "protein": 10, "carbs": 20, "fat": 5} '
+        'Do not include any other text, explanations, or formatting. Just the JSON object.',
+      );
+      print('Gemini API response received');
+
+      final output = response?.output;
+      if (output == null || output.isEmpty) {
+        return Left('No response output from Gemini API');
+      }
+
+      // Try to find JSON in the output, handling various formats
+      String jsonString = '';
+      
+      // First, try to find complete JSON object
+      final completeMatch = RegExp(r'\{.*\}').firstMatch(output);
+      if (completeMatch != null) {
+        jsonString = completeMatch.group(0)!;
+      } else {
+        // If no complete JSON found, try to extract and fix malformed JSON
+        final jsonStart = output.indexOf('"name"');
+        if (jsonStart != -1) {
+          // Find the end of the JSON object
+          final jsonEnd = output.indexOf('}', jsonStart);
+          if (jsonEnd != -1) {
+            // Extract the JSON part and add missing opening brace
+            jsonString = '{' + output.substring(jsonStart, jsonEnd + 1);
+          }
+        }
+      }
+      
+      if (jsonString.isEmpty) {
+        return Left('No valid JSON found in output: $output');
+      }
+
+      final foodData = jsonDecode(jsonString);
+
+      // Validate that all required fields are present
+      if (!foodData.containsKey('name') || 
+          !foodData.containsKey('calories') || 
+          !foodData.containsKey('protein') || 
+          !foodData.containsKey('carbs') || 
+          !foodData.containsKey('fat')) {
+        return Left('Invalid JSON structure: missing required fields');
+      }
+
+      final foodItem = FoodItem(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        name: foodData['name'].toString(),
+        calories: (foodData['calories'] as num).toDouble(),
+        protein: (foodData['protein'] as num).toDouble(),
+        carbs: (foodData['carbs'] as num).toDouble(),
+        fat: (foodData['fat'] as num).toDouble(),
+        quantity: 100.0,
+        timestamp: DateTime.now(),
+      );
+      print('Successfully created food item: ${foodItem.name}');
+      return Right(foodItem);
+    } catch (e) {
+      print('Error in detectFoodFromText: $e');
+      return Left('Failed to detect food from text: ${e.toString()}');
+    }
+  }
 }
