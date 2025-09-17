@@ -6,6 +6,7 @@ class SpeechService {
   final SpeechToText _speechToText = SpeechToText();
   bool _isListening = false;
   bool _isInitialized = false;
+  final Stopwatch _sessionStopwatch = Stopwatch();
 
   bool get isListening => _isListening;
   bool get isInitialized => _isInitialized;
@@ -15,7 +16,12 @@ class SpeechService {
       // Check if we're on web platform
       if (kIsWeb) {
         // On web, speech recognition might not be available
-        final available = await _speechToText.initialize();
+        final available = await _speechToText.initialize(
+          onStatus: _handleStatus,
+          onError: (err) {
+            print('Speech error (web): ${err.errorMsg}');
+          },
+        );
         _isInitialized = available;
         return available;
       }
@@ -39,7 +45,12 @@ class SpeechService {
       }
 
       // Initialize speech to text
-      final available = await _speechToText.initialize();
+      final available = await _speechToText.initialize(
+        onStatus: _handleStatus,
+        onError: (err) {
+          print('Speech error: ${err.errorMsg}');
+        },
+      );
       _isInitialized = available;
       
       if (!available) {
@@ -55,7 +66,8 @@ class SpeechService {
   }
 
   Future<String?> startListening({
-    required Function(String) onResult,
+    required Function(String) onPartial,
+    required Function(String) onFinal,
     required Function(String) onError,
   }) async {
     if (!await initialize()) {
@@ -68,24 +80,36 @@ class SpeechService {
     }
 
     _isListening = true;
+    _sessionStopwatch
+      ..reset()
+      ..start();
     String? recognizedText;
 
-    await _speechToText.listen(
-      onResult: (result) {
-        print('Speech recognition result: ${result.recognizedWords}');
-        print('Final result: ${result.finalResult}');
-        recognizedText = result.recognizedWords;
-        onResult(result.recognizedWords);
-      },
-      listenFor: Duration(seconds: 20),
-      pauseFor: Duration(seconds: 2),
-      partialResults: true,
-      localeId: 'en_US',
-      onSoundLevelChange: (level) {
-        // Optional: Handle sound level changes
-        print('Sound level: $level');
-      },
-    );
+    void startSession() {
+      _speechToText.listen(
+        onResult: (result) {
+          print('Speech recognition result: ${result.recognizedWords}');
+          print('Final result: ${result.finalResult}');
+          recognizedText = result.recognizedWords;
+          if (result.finalResult) {
+            onFinal(result.recognizedWords);
+          } else {
+            onPartial(result.recognizedWords);
+          }
+        },
+        listenFor: const Duration(seconds: 20),
+        pauseFor: const Duration(seconds: 3),
+        partialResults: true,
+        localeId: 'en_US',
+        listenMode: ListenMode.dictation,
+        cancelOnError: false,
+        onSoundLevelChange: (level) {
+          print('Sound level: $level');
+        },
+      );
+    }
+
+    startSession();
 
     return recognizedText;
   }
@@ -95,6 +119,7 @@ class SpeechService {
       print('Stopping speech recognition...');
       _speechToText.stop();
       _isListening = false;
+      _sessionStopwatch.stop();
       print('Speech recognition stopped');
     }
   }
@@ -127,4 +152,28 @@ class SpeechService {
   }
 
   bool get isCurrentlyListening => _isListening;
+
+  void _handleStatus(String status) {
+    print('Speech status: $status');
+    if (status == 'notListening' && _isListening) {
+      // Auto-restart within the 20s session window to capture long phrases
+      if (_sessionStopwatch.isRunning && _sessionStopwatch.elapsed < const Duration(seconds: 20)) {
+        try {
+          _speechToText.listen(
+            onResult: (result) {
+              // This is a safety net; primary callbacks are set in startListening
+            },
+            listenFor: const Duration(seconds: 20),
+            pauseFor: const Duration(seconds: 3),
+            partialResults: true,
+            localeId: 'en_US',
+            listenMode: ListenMode.dictation,
+            cancelOnError: false,
+          );
+        } catch (e) {
+          print('Error auto-restarting listening: $e');
+        }
+      }
+    }
+  }
 }

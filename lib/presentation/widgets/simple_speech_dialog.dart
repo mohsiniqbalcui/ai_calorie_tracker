@@ -90,10 +90,20 @@ class _SimpleSpeechDialogState extends State<SimpleSpeechDialog> {
 
     print('Starting speech recognition...');
     await _speechService.startListening(
-      onResult: (text) {
-        print('Speech result: $text');
+      onPartial: (text) {
+        print('Speech partial: $text');
         setState(() {
           _recognizedText = text;
+        });
+      },
+      onFinal: (text) {
+        print('Speech final: $text');
+        setState(() {
+          if (_recognizedText.isEmpty) {
+            _recognizedText = text;
+          } else if (!_recognizedText.trim().endsWith(text.trim())) {
+            _recognizedText = '${_recognizedText.trim()} ${text.trim()}'.trim();
+          }
         });
       },
       onError: (error) {
@@ -336,3 +346,4 @@ class _SimpleSpeechDialogState extends State<SimpleSpeechDialog> {
     );
   }
 }
+

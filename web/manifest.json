@@ -1,6 +1,6 @@
 {
-    "name": "ai_calorie_tracker",
-    "short_name": "ai_calorie_tracker",
+    "name": "AI Calories calculator",
+    "short_name": "AI Calories calculator",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
