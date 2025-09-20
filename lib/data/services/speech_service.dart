@@ -153,27 +153,23 @@ class SpeechService {
 
   bool get isCurrentlyListening => _isListening;
 
-  void _handleStatus(String status) {
-    print('Speech status: $status');
-    if (status == 'notListening' && _isListening) {
-      // Auto-restart within the 20s session window to capture long phrases
-      if (_sessionStopwatch.isRunning && _sessionStopwatch.elapsed < const Duration(seconds: 20)) {
-        try {
-          _speechToText.listen(
-            onResult: (result) {
-              // This is a safety net; primary callbacks are set in startListening
-            },
-            listenFor: const Duration(seconds: 20),
-            pauseFor: const Duration(seconds: 3),
-            partialResults: true,
-            localeId: 'en_US',
-            listenMode: ListenMode.dictation,
-            cancelOnError: false,
-          );
-        } catch (e) {
-          print('Error auto-restarting listening: $e');
-        }
+void _handleStatus(String status) {
+  if (status == 'notListening' && _isListening) {
+    if (_sessionStopwatch.isRunning && _sessionStopwatch.elapsed < const Duration(seconds: 20)) {
+      try {
+        _speechToText.listen(
+          onResult: (result) {},
+          listenFor: const Duration(seconds: 20),
+          pauseFor: const Duration(seconds: 3),
+          partialResults: true,
+          localeId: 'en_US',
+          listenMode: ListenMode.dictation,
+          cancelOnError: false,
+        );
+      } catch (e) {
+        print('Error auto-restarting listening: $e');
       }
     }
   }
+}
 }

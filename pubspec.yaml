@@ -50,6 +50,7 @@ dependencies:
   dartz: ^0.10.1
   speech_to_text: ^7.0.0
   permission_handler: ^11.3.1
+  device_info_plus: ^10.1.0
 
 dev_dependencies:
   flutter_test:

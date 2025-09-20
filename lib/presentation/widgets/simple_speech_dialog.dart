@@ -20,6 +20,7 @@ class SimpleSpeechDialog extends StatefulWidget {
 class _SimpleSpeechDialogState extends State<SimpleSpeechDialog> {
   final SpeechService _speechService = SpeechService();
   String _recognizedText = '';
+  String _partialText = '';
   bool _isListening = false;
   bool _isProcessing = false;
   int _recordingTime = 0;
@@ -65,6 +66,7 @@ class _SimpleSpeechDialogState extends State<SimpleSpeechDialog> {
     setState(() {
       _isListening = true;
       _recognizedText = '';
+      _partialText = '';
       _recordingTime = 0;
     });
 
@@ -93,7 +95,7 @@ class _SimpleSpeechDialogState extends State<SimpleSpeechDialog> {
       onPartial: (text) {
         print('Speech partial: $text');
         setState(() {
-          _recognizedText = text;
+          _partialText = text;
         });
       },
       onFinal: (text) {
@@ -104,6 +106,7 @@ class _SimpleSpeechDialogState extends State<SimpleSpeechDialog> {
           } else if (!_recognizedText.trim().endsWith(text.trim())) {
             _recognizedText = '${_recognizedText.trim()} ${text.trim()}'.trim();
           }
+          _partialText = ''; // Clear partial text when we get final result
         });
       },
       onError: (error) {
@@ -131,8 +134,9 @@ class _SimpleSpeechDialogState extends State<SimpleSpeechDialog> {
     _stopListening();
     // Add a small delay to ensure stopListening completes
     Future.delayed(Duration(milliseconds: 500), () {
-      if (_recognizedText.trim().isNotEmpty) {
-        print('Manual submission with recognized text: $_recognizedText');
+      final textToCheck = _recognizedText.isNotEmpty ? _recognizedText : _partialText;
+      if (textToCheck.trim().isNotEmpty) {
+        print('Manual submission with text: $textToCheck');
         _handleSubmit();
       } else {
         print('No text recognized, showing message');
@@ -144,13 +148,18 @@ class _SimpleSpeechDialogState extends State<SimpleSpeechDialog> {
   }
 
   void _handleSubmit() async {
+    // Use final recognized text if available, otherwise use partial text
+    final textToSubmit = _recognizedText.isNotEmpty ? _recognizedText : _partialText;
+    
     print('=== HANDLE SUBMIT CALLED ===');
     print('Recognized text: "$_recognizedText"');
-    print('Text length: ${_recognizedText.length}');
-    print('Text trimmed: "${_recognizedText.trim()}"');
-    print('Text trimmed length: ${_recognizedText.trim().length}');
+    print('Partial text: "$_partialText"');
+    print('Text to submit: "$textToSubmit"');
+    print('Text length: ${textToSubmit.length}');
+    print('Text trimmed: "${textToSubmit.trim()}"');
+    print('Text trimmed length: ${textToSubmit.trim().length}');
     
-    if (_recognizedText.trim().isEmpty) {
+    if (textToSubmit.trim().isEmpty) {
       print('Text is empty, showing error message');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Please speak a food description')),
@@ -163,8 +172,8 @@ class _SimpleSpeechDialogState extends State<SimpleSpeechDialog> {
     });
 
     try {
-      print('Calling widget.onSubmitted with: "${_recognizedText.trim()}"');
-      await widget.onSubmitted(_recognizedText.trim());
+      print('Calling widget.onSubmitted with: "${textToSubmit.trim()}"');
+      await widget.onSubmitted(textToSubmit.trim());
       print('Successfully submitted to Gemini API');
       Navigator.of(context).pop();
     } catch (e) {
@@ -252,7 +261,7 @@ class _SimpleSpeechDialogState extends State<SimpleSpeechDialog> {
           ),
           
           // Recognized text
-          if (_recognizedText.isNotEmpty) ...[
+          if (_recognizedText.isNotEmpty || _partialText.isNotEmpty) ...[
             SizedBox(height: 16),
             Container(
               width: double.infinity,
@@ -274,7 +283,7 @@ class _SimpleSpeechDialogState extends State<SimpleSpeechDialog> {
                   ),
                   SizedBox(height: 4),
                   Text(
-                    _recognizedText,
+                    _recognizedText.isNotEmpty ? _recognizedText : _partialText,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
@@ -333,7 +342,7 @@ class _SimpleSpeechDialogState extends State<SimpleSpeechDialog> {
           child: Text('Text Input'),
         ),
         ElevatedButton(
-          onPressed: _isProcessing || _recognizedText.isEmpty ? null : _handleSubmit,
+          onPressed: _isProcessing || (_recognizedText.isEmpty && _partialText.isEmpty) ? null : _handleSubmit,
           child: _isProcessing 
             ? SizedBox(
                 width: 16,

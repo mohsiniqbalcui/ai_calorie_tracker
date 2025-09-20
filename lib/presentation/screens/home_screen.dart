@@ -12,6 +12,7 @@ import '../widgets/alert_message_widget.dart';
 import '../widgets/text_input_dialog.dart';
 import '../widgets/speech_input_dialog.dart';
 import '../widgets/simple_speech_dialog.dart';
+    import 'package:device_info_plus/device_info_plus.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -87,18 +88,37 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<bool> _ensurePermissions() async {
     if (kIsWeb) return true; // Web handles permissions differently
 
-    final Map<Permission, PermissionStatus> statuses = await [
+    // Check Android API level to determine if we need storage permission
+    bool needsStoragePermission = true;
+
+// In _ensurePermissions():
+if (Platform.isAndroid) {
+  final deviceInfo = DeviceInfoPlugin();
+  final androidInfo = await deviceInfo.androidInfo;
+  needsStoragePermission = androidInfo.version.sdkInt < 33; // API 33 = Android 13
+}
+
+    List<Permission> permissionsToRequest = [
       Permission.camera,
       Permission.microphone,
-      // On Android 13+ use photos permission is implicit via picker; request storage for older devices
-      Permission.storage,
-    ].request();
+    ];
+
+    // Only add storage permission for older Android versions
+    if (needsStoragePermission) {
+      permissionsToRequest.add(Permission.storage);
+    }
+
+    final Map<Permission, PermissionStatus> statuses = await permissionsToRequest.request();
 
     final allGranted = statuses.values.every((s) => s.isGranted);
 
     if (!allGranted) {
+      String permissionText = needsStoragePermission 
+          ? 'Please grant Camera, Microphone, and Storage permissions.'
+          : 'Please grant Camera and Microphone permissions.';
+      
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please grant Camera, Microphone, and Storage permissions.')),
+        SnackBar(content: Text(permissionText)),
       );
     }
 
