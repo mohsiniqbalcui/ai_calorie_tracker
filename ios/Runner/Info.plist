@@ -15,7 +15,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>AI Calorie calculator/string>
+	<string>AI Calorie calculator</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -30,6 +30,10 @@
 	<string>We need access to your camera to take photos of food for calorie tracking.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>We need access to your photo library to select food images for calorie tracking.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>We need speech recognition to convert your voice descriptions of food into text.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>We need access to your microphone to record voice descriptions of food for calorie tracking.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

@@ -2,6 +2,8 @@ PODS:
   - CwlCatchException (2.2.1):
     - CwlCatchExceptionSupport (~> 2.2.1)
   - CwlCatchExceptionSupport (2.2.1)
+  - device_info_plus (0.0.1):
+    - Flutter
   - Flutter (1.0.0)
   - image_picker_ios (0.0.1):
     - Flutter
@@ -16,6 +18,7 @@ PODS:
     - FlutterMacOS
 
 DEPENDENCIES:
+  - device_info_plus (from `.symlinks/plugins/device_info_plus/ios`)
   - Flutter (from `Flutter`)
   - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
@@ -28,6 +31,8 @@ SPEC REPOS:
     - CwlCatchExceptionSupport
 
 EXTERNAL SOURCES:
+  device_info_plus:
+    :path: ".symlinks/plugins/device_info_plus/ios"
   Flutter:
     :path: Flutter
   image_picker_ios:
@@ -42,12 +47,13 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   CwlCatchException: 7acc161b299a6de7f0a46a6ed741eae2c8b4d75a
   CwlCatchExceptionSupport: 54ccab8d8c78907b57f99717fb19d4cc3bce02dc
+  device_info_plus: 97af1d7e84681a90d0693e63169a5d50e0839a0d
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   image_picker_ios: c560581cceedb403a6ff17f2f816d7fea1421fc1
   permission_handler_apple: 9878588469a2b0d0fc1e048d9f43605f92e6cec2
   shared_preferences_foundation: fcdcbc04712aee1108ac7fda236f363274528f78
   speech_to_text: 87bf9298952e8d9073be1b6aade6d5758db5170c
 
-PODFILE CHECKSUM: a57f30d18f102dd3ce366b1d62a55ecbef2158e5
+PODFILE CHECKSUM: a45ccad99eabf86a3e306a43093d5a565d0d8c2a
 
 COCOAPODS: 1.16.2

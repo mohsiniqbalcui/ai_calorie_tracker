@@ -89,14 +89,13 @@ class _HomeScreenState extends State<HomeScreen> {
     if (kIsWeb) return true; // Web handles permissions differently
 
     // Check Android API level to determine if we need storage permission
-    bool needsStoragePermission = true;
+    bool needsStoragePermission = false;
 
-// In _ensurePermissions():
-if (Platform.isAndroid) {
-  final deviceInfo = DeviceInfoPlugin();
-  final androidInfo = await deviceInfo.androidInfo;
-  needsStoragePermission = androidInfo.version.sdkInt < 33; // API 33 = Android 13
-}
+    if (Platform.isAndroid) {
+      final deviceInfo = DeviceInfoPlugin();
+      final androidInfo = await deviceInfo.androidInfo;
+      needsStoragePermission = androidInfo.version.sdkInt < 33; // API 33 = Android 13
+    }
 
     List<Permission> permissionsToRequest = [
       Permission.camera,
@@ -108,21 +107,60 @@ if (Platform.isAndroid) {
       permissionsToRequest.add(Permission.storage);
     }
 
+    // Check current permission status first
+    final Map<Permission, PermissionStatus> currentStatuses = {};
+    for (Permission permission in permissionsToRequest) {
+      currentStatuses[permission] = await permission.status;
+    }
+
+    // If permissions are already granted, return true
+    final alreadyGranted = currentStatuses.values.every((status) => status.isGranted);
+    if (alreadyGranted) {
+      return true;
+    }
+
+    // Request permissions
     final Map<Permission, PermissionStatus> statuses = await permissionsToRequest.request();
 
-    final allGranted = statuses.values.every((s) => s.isGranted);
+    // Debug logging
+    print('Permission statuses:');
+    statuses.forEach((permission, status) {
+      print('${permission.toString()}: ${status.toString()}');
+    });
 
-    if (!allGranted) {
-      String permissionText = needsStoragePermission 
-          ? 'Please grant Camera, Microphone, and Storage permissions.'
-          : 'Please grant Camera and Microphone permissions.';
+    // Check if essential permissions (camera and microphone) are granted
+    final cameraGranted = statuses[Permission.camera]?.isGranted == true;
+    final microphoneGranted = statuses[Permission.microphone]?.isGranted == true;
+
+    if (!cameraGranted || !microphoneGranted) {
+      List<String> missingPermissions = [];
+      if (!cameraGranted) missingPermissions.add('Camera');
+      if (!microphoneGranted) missingPermissions.add('Microphone');
       
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(permissionText)),
+        SnackBar(
+          content: Text('Please grant ${missingPermissions.join(' and ')} permissions in Settings.'),
+          duration: Duration(seconds: 4),
+          action: SnackBarAction(
+            label: 'Open Settings',
+            onPressed: () => openAppSettings(),
+          ),
+        ),
+      );
+      return false;
+    }
+
+    // If storage permission is needed but not granted, show a warning but still allow the action
+    if (needsStoragePermission && !statuses[Permission.storage]!.isGranted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Storage permission recommended for better functionality.'),
+          duration: Duration(seconds: 2),
+        ),
       );
     }
 
-    return allGranted;
+    return true;
   }
 
   void _showTextInputDialog(BuildContext context) {
