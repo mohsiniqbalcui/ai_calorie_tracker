@@ -2,9 +2,11 @@
 
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.MICROPHONE"/>
 
     <application
-        android:label="ai_calorie_tracker"
+        android:label="AI Calories calculator"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">
         <activity
