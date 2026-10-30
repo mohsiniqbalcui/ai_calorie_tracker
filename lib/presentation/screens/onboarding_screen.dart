@@ -11,6 +11,9 @@ class OnboardingScreen extends StatefulWidget {
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
+  final TextEditingController _weightController = TextEditingController();
+  final TextEditingController _heightController = TextEditingController();
+  final TextEditingController _ageController = TextEditingController();
   int _currentPage = 0;
 
   double? weight;
@@ -29,6 +32,42 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     'Active': '6-7 days/week of exercise',
     'Very Active': 'Very intense exercise/sports & physical job'
   };
+
+  @override
+  void initState() {
+    super.initState();
+    _hydrateFromStorage();
+  }
+
+  Future<void> _hydrateFromStorage() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = PreferenceManager(prefs).getUserData();
+    if (!mounted || saved == null) return;
+    setState(() {
+      weight = saved.weight;
+      height = saved.height;
+      age = saved.age;
+      activityLevel = saved.activityLevel;
+      gender = saved.gender;
+      userGoal = saved.goal;
+      estimatedCalories = saved.estimatedCalories;
+      _weightController.text = _formatDecimal(saved.weight);
+      _heightController.text = _formatDecimal(saved.height);
+      _ageController.text = '${saved.age}';
+    });
+  }
+
+  String _formatDecimal(double v) =>
+      v == v.roundToDouble() ? '${v.round()}' : '$v';
+
+  @override
+  void dispose() {
+    _weightController.dispose();
+    _heightController.dispose();
+    _ageController.dispose();
+    _pageController.dispose();
+    super.dispose();
+  }
 
   Future<void> _savePreferences() async {
     final maintenanceCalories = CalorieCalculator.fallbackEstimateCalories(
@@ -185,6 +224,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             'Enter Your Weight',
             'assets/onboarding/onboarding_weight.png',
             TextField(
+              controller: _weightController,
               keyboardType: TextInputType.number,
               onChanged: (value) => weight = double.tryParse(value),
               decoration: InputDecoration(labelText: 'Weight in kg'),
@@ -194,6 +234,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             'Enter Your Height',
             'assets/onboarding/onboarding_height.png',
             TextField(
+              controller: _heightController,
               keyboardType: TextInputType.number,
               onChanged: (value) => height = double.tryParse(value),
               decoration: InputDecoration(labelText: 'Height in cm'),
@@ -203,6 +244,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             'Enter Your Age',
             'assets/onboarding/onboarding_age.png',
             TextField(
+              controller: _ageController,
               keyboardType: TextInputType.number,
               onChanged: (value) => age = int.tryParse(value),
               decoration: InputDecoration(labelText: 'Age in years'),
