@@ -13,6 +13,11 @@ class FoodItem {
   final double quantity;
   final String? imageUrl;
   final DateTime timestamp;
+  final String mealType;
+  final String? note;
+  final double fiber;
+  final double sugar;
+  final double sodium; // mg
 
   FoodItem({
     required this.id,
@@ -24,6 +29,11 @@ class FoodItem {
     required this.quantity,
     this.imageUrl,
     required this.timestamp,
+    this.mealType = 'snack',
+    this.note,
+    this.fiber = 0,
+    this.sugar = 0,
+    this.sodium = 0,
   });
 
   factory FoodItem.fromJson(Map<String, dynamic> json) => _$FoodItemFromJson(json);
@@ -37,6 +47,12 @@ class FoodItem {
     double? fat,
     double? quantity,
     String? imageUrl,
+    DateTime? timestamp,
+    String? mealType,
+    String? note,
+    double? fiber,
+    double? sugar,
+    double? sodium,
   }) {
     return FoodItem(
       id: this.id,
@@ -47,7 +63,12 @@ class FoodItem {
       fat: fat ?? this.fat,
       quantity: quantity ?? this.quantity,
       imageUrl: imageUrl ?? this.imageUrl,
-      timestamp: this.timestamp,
+      timestamp: timestamp ?? this.timestamp,
+      mealType: mealType ?? this.mealType,
+      note: note ?? this.note,
+      fiber: fiber ?? this.fiber,
+      sugar: sugar ?? this.sugar,
+      sodium: sodium ?? this.sodium,
     );
   }
 }

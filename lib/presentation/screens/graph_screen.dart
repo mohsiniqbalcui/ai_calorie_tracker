@@ -1,163 +1,91 @@
 import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../cubit/food_log_cubit.dart';
+import '../cubit/settings_cubit.dart';
+import '../cubit/tracker_cubit.dart';
+import '../tools/body_metrics_screen.dart';
+import '../tools/weight_screen.dart';
+import '../widgets/charts.dart';
+import '../widgets/common.dart';
 
+/// Simple mode progress: a weekly chart, a few clear numbers and weight.
 class GraphScreen extends StatelessWidget {
+  const GraphScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final food = context.watch<FoodLogCubit>().state;
+    final settings = context.watch<SettingsCubit>().state;
+    final tracker = context.watch<TrackerCubit>().state;
+    final week = food.history.skip(food.history.length > 7 ? food.history.length - 7 : 0).toList();
+    final logged = week.where((d) => d.meals > 0).toList();
+    final avg = logged.isEmpty ? 0 : logged.fold(0.0, (s, d) => s + d.calories) / logged.length;
+    final onTarget = logged.where((d) => d.calories >= settings.calorieGoal * 0.9 && d.calories <= settings.calorieGoal * 1.1).length;
+
+    Widget stat(String label, String value, IconData icon) => Expanded(
+          child: AppCard(
+            child: Column(children: [
+              Icon(icon, color: theme.colorScheme.primary),
+              const SizedBox(height: 6),
+              Text(value, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+              Text(label, style: theme.textTheme.labelSmall),
+            ]),
+          ),
+        );
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Weekly Progress'),
-        automaticallyImplyLeading: false,
-      ),
-      body: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: BlocBuilder<FoodLogCubit, FoodLogState>(
-          builder: (context, state) {
-            if (state.isLoading) {
-              return Center(child: CircularProgressIndicator());
-            }
-
-            return Column(
+      appBar: AppBar(title: const Text('Your progress'), automaticallyImplyLeading: false, actions: const [ModeToggleButton()]),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  height: 300,
-                  child: BarChart(
-                    BarChartData(
-                      alignment: BarChartAlignment.spaceAround,
-                      maxY: 2500,
-                      barGroups: state.weeklyData.asMap().entries.map((entry) {
-                        return BarChartGroupData(
-                          x: entry.key,
-                          barRods: [
-                            BarChartRodData(
-                              toY: entry.value,
-                              color: Colors.orange,
-                              width: 20,
-                              fromY: 0,
-                            ),
-                          ],
-                        );
-                      }).toList(),
-                      titlesData: FlTitlesData(
-                        leftTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            getTitlesWidget: (value, meta) => 
-                              Text('${value.toInt()}'),
-                            interval: 500,
-                          ),
-                        ),
-                        bottomTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            getTitlesWidget: (value, meta) {
-                              switch (value.toInt()) {
-                                case 0: return Text('Mon');
-                                case 1: return Text('Tue');
-                                case 2: return Text('Wed');
-                                case 3: return Text('Thu');
-                                case 4: return Text('Fri');
-                                case 5: return Text('Sat');
-                                case 6: return Text('Sun');
-                                default: return Text('');
-                              }
-                            },
-                          ),
-                        ),
-                        topTitles: AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
-                        rightTitles: AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
-                      ),
-                      gridData: FlGridData(
-                        show: true,
-                        horizontalInterval: 500,
-                      ),
-                      borderData: FlBorderData(
-                        show: true,
-                        border: Border.all(color: Colors.grey.shade300),
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(height: 24),
-                _buildWeeklyStats(state),
-              ],
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildWeeklyStats(FoodLogState state) {
-    final avgCalories = state.weeklyData.isEmpty 
-      ? 0.0 
-      : state.weeklyData.reduce((a, b) => a + b) / state.weeklyData.length;
-
-    return Card(
-      child: Padding(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Weekly Summary',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildStatItem(
-                  'Average',
-                  '${avgCalories.toInt()} kcal',
-                  Icons.analytics,
-                ),
-                _buildStatItem(
-                  'Highest',
-                  '${state.weeklyData.isEmpty ? 0 : state.weeklyData.reduce((a, b) => a > b ? a : b).toInt()} kcal',
-                  Icons.arrow_upward,
-                ),
-                _buildStatItem(
-                  'Lowest',
-                  '${state.weeklyData.isEmpty ? 0 : state.weeklyData.reduce((a, b) => a < b ? a : b).toInt()} kcal',
-                  Icons.arrow_downward,
-                ),
+                Text('Last 7 days', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+                Text('Dashed line is your daily goal', style: theme.textTheme.bodySmall),
+                const SizedBox(height: 16),
+                CalorieBarChart(days: week, goal: settings.calorieGoal),
               ],
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 12),
+          Row(children: [
+            stat('Daily average', '${avg.round()} kcal', Icons.analytics_rounded),
+            const SizedBox(width: 10),
+            stat('On target', '$onTarget / ${logged.length} days', Icons.track_changes_rounded),
+            const SizedBox(width: 10),
+            stat('Streak', '${food.streak} days', Icons.local_fire_department_rounded),
+          ]),
+          const SizedBox(height: 12),
+          AppCard(
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WeightScreen())),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [
+                  Text('Weight', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+                  const Spacer(),
+                  const Icon(Icons.chevron_right_rounded),
+                ]),
+                const SizedBox(height: 8),
+                WeightChart(entries: tracker.weights, metric: settings.metric, height: 150),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          AppCard(
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BodyMetricsScreen())),
+            child: const Row(children: [
+              Icon(Icons.monitor_heart_rounded),
+              SizedBox(width: 12),
+              Expanded(child: Text('BMI and body metrics')),
+              Icon(Icons.chevron_right_rounded),
+            ]),
+          ),
+        ],
       ),
-    );
-  }
-
-
-
-  Widget _buildStatItem(String label, String value, IconData icon) {
-    return Column(
-      children: [
-        Icon(icon, color: Colors.orange),
-        SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.grey[600],
-            fontSize: 12,
-          ),
-        ),
-        Text(
-          value,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-          ),
-        ),
-      ],
     );
   }
 }

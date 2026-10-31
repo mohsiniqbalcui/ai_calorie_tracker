@@ -16,6 +16,11 @@ FoodItem _$FoodItemFromJson(Map<String, dynamic> json) => FoodItem(
       quantity: (json['quantity'] as num).toDouble(),
       imageUrl: json['imageUrl'] as String?,
       timestamp: DateTime.parse(json['timestamp'] as String),
+      mealType: json['mealType'] as String? ?? 'snack',
+      note: json['note'] as String?,
+      fiber: (json['fiber'] as num?)?.toDouble() ?? 0,
+      sugar: (json['sugar'] as num?)?.toDouble() ?? 0,
+      sodium: (json['sodium'] as num?)?.toDouble() ?? 0,
     );
 
 Map<String, dynamic> _$FoodItemToJson(FoodItem instance) => <String, dynamic>{
@@ -28,4 +33,9 @@ Map<String, dynamic> _$FoodItemToJson(FoodItem instance) => <String, dynamic>{
       'quantity': instance.quantity,
       'imageUrl': instance.imageUrl,
       'timestamp': instance.timestamp.toIso8601String(),
+      'mealType': instance.mealType,
+      'note': instance.note,
+      'fiber': instance.fiber,
+      'sugar': instance.sugar,
+      'sodium': instance.sodium,
     };

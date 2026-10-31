@@ -1,5 +1,9 @@
 import 'dart:io';
 
+import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -7,7 +11,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'data/repositories/food_repository.dart';
 import 'data/services/food_service.dart';
 import 'data/local/preference_manager.dart';
+import 'core/theme/app_theme.dart';
+import 'data/local/tracker_store.dart';
 import 'presentation/cubit/food_log_cubit.dart';
+import 'presentation/cubit/settings_cubit.dart';
+import 'presentation/cubit/tracker_cubit.dart';
 import 'presentation/screens/home_screen.dart';
 import 'presentation/screens/onboarding_screen.dart';
 import 'presentation/screens/main_screen.dart';
@@ -23,10 +31,31 @@ Future<void> _loadEnvironmentFile() async {
   }
 }
 
+/// Starts Firebase when the platform config file is present
+/// (`google-services.json` / `GoogleService-Info.plist`). Without it the app
+/// keeps working offline, so a fresh checkout still runs.
+Future<bool> _initFirebase() async {
+  try {
+    await Firebase.initializeApp();
+    FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+    PlatformDispatcher.instance.onError = (error, stack) {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      return true;
+    };
+    await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(!kDebugMode);
+    await FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(!kDebugMode);
+    return true;
+  } catch (e) {
+    debugPrint('Firebase not configured: $e');
+    return false;
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await _loadEnvironmentFile();
+  await _initFirebase();
   
   // Initialize SharedPreferences
   final prefs = await SharedPreferences.getInstance();
@@ -42,43 +71,63 @@ void main() async {
   final foodService = FoodService();
   final foodRepository = FoodRepository(foodService, prefs);
   
+  final trackerStore = TrackerStore(prefs);
+
   runApp(MyApp(
     showOnboarding: showOnboarding,
     foodRepository: foodRepository,
+    trackerStore: trackerStore,
+    settingsCubit: SettingsCubit(prefs),
   ));
 }
 
 class MyApp extends StatelessWidget {
   final bool showOnboarding;
   final FoodRepository foodRepository;
-  
+  final TrackerStore trackerStore;
+  final SettingsCubit settingsCubit;
+
   const MyApp({
+    super.key,
     required this.showOnboarding,
     required this.foodRepository,
+    required this.trackerStore,
+    required this.settingsCubit,
   });
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => FoodLogCubit(foodRepository)..loadDailyLog(),
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'Calorie Tracker',
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-          visualDensity: VisualDensity.adaptivePlatformDensity,
+    return RepositoryProvider.value(
+      value: trackerStore,
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider.value(value: settingsCubit),
+          BlocProvider(create: (_) => FoodLogCubit(foodRepository, trackerStore)..loadDailyLog()),
+          BlocProvider(create: (_) => TrackerCubit(trackerStore)),
+        ],
+        child: BlocBuilder<SettingsCubit, AppSettings>(
+          buildWhen: (a, b) => a.uiMode != b.uiMode || a.themeMode != b.themeMode,
+          builder: (context, settings) {
+            return MaterialApp(
+              debugShowCheckedModeBanner: false,
+              title: 'Calorie Lens',
+              // Pro is a white, professional look; it only goes dark when chosen explicitly.
+              themeMode: settings.isPro && settings.themeMode == ThemeMode.system ? ThemeMode.light : settings.themeMode,
+              theme: AppTheme.build(settings.uiMode, Brightness.light),
+              darkTheme: AppTheme.build(settings.uiMode, Brightness.dark),
+              home: SplashScreen(
+                nextBuilder: () => showOnboarding ? OnboardingScreen() : const MainScreen(),
+                durationMs: 2000,
+              ),
+              routes: {
+                '/main': (context) => const MainScreen(),
+                '/home': (context) => const HomeScreen(),
+                '/onboarding': (context) => OnboardingScreen(),
+                '/settings': (context) => const SettingsScreen(),
+              },
+            );
+          },
         ),
-        home: SplashScreen(
-          nextBuilder: () => showOnboarding ? OnboardingScreen() : MainScreen(),
-          durationMs: 3000,
-        ),
-        routes: {
-          '/main': (context) => MainScreen(),
-          '/home': (context) => HomeScreen(), 
-          '/onboarding': (context) => OnboardingScreen(),
-          '/settings': (context) => SettingsScreen(),
-// Ensures `/home` route is defined
-        },
       ),
     );
   }

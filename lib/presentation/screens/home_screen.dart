@@ -1,253 +1,76 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:flutter/foundation.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'dart:io';
-import 'dart:convert';
 import '../cubit/food_log_cubit.dart';
+import '../widgets/add_food_flow.dart';
+import '../widgets/common.dart';
 import '../widgets/daily_tracker.dart';
-import '../widgets/meal_list.dart';
-import '../widgets/alert_message_widget.dart';
-import '../widgets/text_input_dialog.dart';
-import '../widgets/speech_input_dialog.dart';
-import '../widgets/simple_speech_dialog.dart';
-    import 'package:device_info_plus/device_info_plus.dart';
+import '../widgets/insight_card.dart';
+import '../widgets/meal_tile.dart';
+import 'food_search_screen.dart';
 
-class HomeScreen extends StatefulWidget {
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
+/// Simple mode home: one calm screen with everything for today.
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
 
-class _HomeScreenState extends State<HomeScreen> {
-  final picker = ImagePicker();
-  File? _image;
-
-  Future<void> getImage(ImageSource source) async {
-    final pickedFile = await picker.pickImage(
-      source: source,
-      maxWidth: 600,
-    );
-
-    if (pickedFile != null) {
-      setState(() {
-        _image = File(pickedFile.path);
-      });
-      scanImage();
-    }
-  }
-
-  void scanImage() async {
-    context.read<FoodLogCubit>().addMealFromImage(_image!);
-  }
-
-  void showImageSourceActionSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Wrap(
-        children: <Widget>[
-          ListTile(
-            leading: Icon(Icons.camera_alt),
-            title: Text('Camera'),
-            onTap: () {
-              Navigator.pop(context);
-              getImage(ImageSource.camera);
-            },
-          ),
-          ListTile(
-            leading: Icon(Icons.photo_library),
-            title: Text('Gallery'),
-            onTap: () {
-              Navigator.pop(context);
-              getImage(ImageSource.gallery);
-            },
-          ),
-          ListTile(
-            leading: Icon(Icons.edit),
-            title: Text('Text Input'),
-            onTap: () {
-              Navigator.pop(context);
-              _showTextInputDialog(context);
-            },
-          ),
-          ListTile(
-            leading: Icon(Icons.mic),
-            title: Text('Voice Input'),
-            subtitle: kIsWeb ? Text('Not available on web') : null,
-            enabled: !kIsWeb,
-            onTap: kIsWeb ? null : () {
-              Navigator.pop(context);
-              _showSpeechInputDialog(context);
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<bool> _ensurePermissions() async {
-    if (kIsWeb) return true; // Web handles permissions differently
-
-    // Check Android API level to determine if we need storage permission
-    bool needsStoragePermission = false;
-
-    if (Platform.isAndroid) {
-      final deviceInfo = DeviceInfoPlugin();
-      final androidInfo = await deviceInfo.androidInfo;
-      needsStoragePermission = androidInfo.version.sdkInt < 33; // API 33 = Android 13
-    }
-
-    List<Permission> permissionsToRequest = [
-      Permission.camera,
-      Permission.microphone,
-    ];
-
-    // Only add storage permission for older Android versions
-    if (needsStoragePermission) {
-      permissionsToRequest.add(Permission.storage);
-    }
-
-    // Check current permission status first
-    final Map<Permission, PermissionStatus> currentStatuses = {};
-    for (Permission permission in permissionsToRequest) {
-      currentStatuses[permission] = await permission.status;
-    }
-
-    // If permissions are already granted, return true
-    final alreadyGranted = currentStatuses.values.every((status) => status.isGranted);
-    if (alreadyGranted) {
-      return true;
-    }
-
-    // Request permissions
-    final Map<Permission, PermissionStatus> statuses = await permissionsToRequest.request();
-
-    // Debug logging
-    print('Permission statuses:');
-    statuses.forEach((permission, status) {
-      print('${permission.toString()}: ${status.toString()}');
-    });
-
-    // Check if essential permissions (camera and microphone) are granted
-    final cameraGranted = statuses[Permission.camera]?.isGranted == true;
-    final microphoneGranted = statuses[Permission.microphone]?.isGranted == true;
-
-    if (!cameraGranted || !microphoneGranted) {
-      List<String> missingPermissions = [];
-      if (!cameraGranted) missingPermissions.add('Camera');
-      if (!microphoneGranted) missingPermissions.add('Microphone');
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Please grant ${missingPermissions.join(' and ')} permissions in Settings.'),
-          duration: Duration(seconds: 4),
-          action: SnackBarAction(
-            label: 'Open Settings',
-            onPressed: () => openAppSettings(),
-          ),
-        ),
-      );
-      return false;
-    }
-
-    // If storage permission is needed but not granted, show a warning but still allow the action
-    if (needsStoragePermission && !statuses[Permission.storage]!.isGranted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Storage permission recommended for better functionality.'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
-
-    return true;
-  }
-
-  void _showTextInputDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => TextInputDialog(
-        title: 'Add Food Item',
-        hintText: 'Describe the food you ate (e.g., "Grilled chicken breast with rice")',
-        onSubmitted: (text) async {
-          await context.read<FoodLogCubit>().addMealFromText(text);
-        },
-      ),
-    );
-  }
-
-  void _showSpeechInputDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => SimpleSpeechDialog(
-        onSubmitted: (text) async {
-          await context.read<FoodLogCubit>().addMealFromText(text);
-        },
-      ),
-    );
+  String _greeting() {
+    final h = DateTime.now().hour;
+    if (h < 12) return 'Good morning';
+    if (h < 18) return 'Good afternoon';
+    return 'Good evening';
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Calorie Tracker'),
+        title: Text(_greeting()),
         automaticallyImplyLeading: false,
+        actions: const [ModeToggleButton()],
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        child: BlocBuilder<FoodLogCubit, FoodLogState>(
+          builder: (context, state) {
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 110),
               children: [
-                Text("Today's trackers", style: Theme.of(context).textTheme.titleMedium),
-                SizedBox(height: 16),
-                BlocBuilder<FoodLogCubit, FoodLogState>(
-                builder: (context, state) {
-                  if (state.isLoading) {
-                    return Center(child: CircularProgressIndicator());
-                  }
-                  return Column(
+                const DateNavigator(),
+                const SizedBox(height: 8),
+                const SearchFoodBar(),
+                const SizedBox(height: 8),
+                const Align(alignment: Alignment.centerLeft, child: StreakChip()),
+                const SizedBox(height: 8),
+                const StatusBanner(),
+                if (state.isLoading && state.meals.isEmpty)
+                  const Padding(padding: EdgeInsets.all(48), child: Center(child: CircularProgressIndicator()))
+                else ...[
+                  DailyTracker(calories: state.totalCalories, protein: state.totalProtein, carbs: state.totalCarbs, fat: state.totalFat),
+                  const SizedBox(height: 12),
+                  const InsightCard(),
+                  const SizedBox(height: 12),
+                  const WaterCard(),
+                  const SizedBox(height: 8),
+                  Row(
                     children: [
-                      // Tracker Section
-                      DailyTracker(
-                        calories: state.totalCalories,
-                        protein: state.totalProtein,
-                        carbs: state.totalCarbs,
-                        fat: state.totalFat,
-                      ),
-                      SizedBox(height: 24),
-
-                      // Inline Alert Section for Success or Error
-                      if (state.successMessage != null || state.error != null)
-                          AlertMessageWidget(
-                            errorMessage: state.error,
-                            successMessage: state.successMessage,
-                            onClose: () => context.read<FoodLogCubit>().clearMessages(),
-                          ),
-
-                      // Meals Section
-                      Text('Meals', style: Theme.of(context).textTheme.titleMedium),
-                      SizedBox(height: 16),
-                      MealList(meals: state.meals),
+                      Expanded(child: Text('Meals', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800))),
+                      if (state.meals.isEmpty)
+                        TextButton.icon(
+                          onPressed: () => context.read<FoodLogCubit>().copyMealsFrom(state.selectedDate.subtract(const Duration(days: 1))),
+                          icon: const Icon(Icons.copy_rounded, size: 18),
+                          label: const Text('Copy yesterday'),
+                        ),
                     ],
-                  );
-                },
-              ),
+                  ),
+                  MealList(meals: state.meals),
+                ],
               ],
-            ),
-          ),
+            );
+          },
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final ok = await _ensurePermissions();
-          if (ok) {
-            showImageSourceActionSheet(context);
-          }
-        },
-        child: Icon(Icons.add),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => AddFoodFlow.show(context),
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Add food'),
       ),
     );
   }

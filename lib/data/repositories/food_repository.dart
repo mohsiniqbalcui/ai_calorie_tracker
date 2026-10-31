@@ -71,4 +71,38 @@ class FoodRepository {
       );
     }
   }
+
+  /// Days that have at least one meal, and the total meal count ever logged.
+  ({Set<String> days, int meals}) _logSummary() {
+    final days = <String>{};
+    var meals = 0;
+    for (final key in _prefs.getKeys().where((k) => k.startsWith('food_log_'))) {
+      final raw = _prefs.getString(key);
+      if (raw == null) continue;
+      final count = (json.decode(raw) as List).length;
+      if (count > 0) {
+        days.add(key.substring('food_log_'.length));
+        meals += count;
+      }
+    }
+    return (days: days, meals: meals);
+  }
+
+  int getLifetimeMealCount() => _logSummary().meals;
+
+  /// Consecutive logged days ending today (or yesterday if today is empty).
+  int getStreak() {
+    final days = _logSummary().days;
+    String keyFor(DateTime d) => d.toIso8601String().split('T')[0];
+    var day = DateTime.now();
+    if (!days.contains(keyFor(day))) {
+      day = day.subtract(const Duration(days: 1));
+    }
+    var streak = 0;
+    while (days.contains(keyFor(day))) {
+      streak++;
+      day = day.subtract(const Duration(days: 1));
+    }
+    return streak;
+  }
 }

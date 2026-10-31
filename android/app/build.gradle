@@ -42,3 +42,9 @@ android {
 flutter {
     source = "../.."
 }
+
+// Firebase plugins need google-services.json; skip them until it is added.
+if (file("google-services.json").exists()) {
+    apply plugin: "com.google.gms.google-services"
+    apply plugin: "com.google.firebase.crashlytics"
+}

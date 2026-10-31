@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/utils/calorie_calculator.dart';
 import '../../data/local/preference_manager.dart';
 import '../../data/models/user_data.dart';
+import '../cubit/settings_cubit.dart';
 
 class OnboardingScreen extends StatefulWidget {
   @override
@@ -20,6 +22,85 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   String? gender;
   int estimatedCalories = 0;
   String? userGoal;
+
+  final TextEditingController _weightController = TextEditingController();
+  final TextEditingController _heightController = TextEditingController();
+  final TextEditingController _ageController = TextEditingController();
+
+  static const _draftWeightKey = 'onboarding_draft_weight';
+  static const _draftHeightKey = 'onboarding_draft_height';
+  static const _draftAgeKey = 'onboarding_draft_age';
+  static const _draftActivityKey = 'onboarding_draft_activity_level';
+  static const _draftGenderKey = 'onboarding_draft_gender';
+  static const _draftGoalKey = 'onboarding_draft_goal';
+  static const _draftPageKey = 'onboarding_draft_page';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDraft();
+  }
+
+  @override
+  void dispose() {
+    _weightController.dispose();
+    _heightController.dispose();
+    _ageController.dispose();
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  // Restores whatever the user entered before the app was closed.
+  Future<void> _loadDraft() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedPage = (prefs.getInt(_draftPageKey) ?? 0).clamp(0, 5);
+    if (!mounted) return;
+    setState(() {
+      weight = prefs.getDouble(_draftWeightKey);
+      height = prefs.getDouble(_draftHeightKey);
+      age = prefs.getInt(_draftAgeKey);
+      activityLevel = prefs.getString(_draftActivityKey);
+      gender = prefs.getString(_draftGenderKey);
+      userGoal = prefs.getString(_draftGoalKey);
+      _weightController.text = prefs.getString('${_draftWeightKey}_text') ?? '';
+      _heightController.text = prefs.getString('${_draftHeightKey}_text') ?? '';
+      _ageController.text = prefs.getString('${_draftAgeKey}_text') ?? '';
+    });
+    if (savedPage > 0) {
+      _pageController.jumpToPage(savedPage);
+    }
+  }
+
+  Future<void> _saveDraftValue(String key, Object? value) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (value == null) {
+      await prefs.remove(key);
+    } else if (value is double) {
+      await prefs.setDouble(key, value);
+    } else if (value is int) {
+      await prefs.setInt(key, value);
+    } else if (value is String) {
+      await prefs.setString(key, value);
+    }
+  }
+
+  Future<void> _clearDraft() async {
+    final prefs = await SharedPreferences.getInstance();
+    for (final key in [
+      _draftWeightKey,
+      _draftHeightKey,
+      _draftAgeKey,
+      _draftActivityKey,
+      _draftGenderKey,
+      _draftGoalKey,
+      _draftPageKey,
+      '${_draftWeightKey}_text',
+      '${_draftHeightKey}_text',
+      '${_draftAgeKey}_text',
+    ]) {
+      await prefs.remove(key);
+    }
+  }
 
   // Activity level descriptions for better user understanding
   final Map<String, String> activityLevelDescriptions = {
@@ -72,6 +153,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     
     // Mark onboarding as complete
     await prefs.setBool('onboarding_complete', true);
+    await _clearDraft();
+    if (mounted) context.read<SettingsCubit>().reload();
   }
 
   void _nextPage() {
@@ -156,7 +239,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     ),
                   ))
               .toList(),
-          onChanged: (value) => setState(() => activityLevel = value),
+          onChanged: (value) {
+            setState(() => activityLevel = value);
+            _saveDraftValue(_draftActivityKey, value);
+          },
           hint: Text('Select Activity Level'),
         ),
       ],
@@ -179,14 +265,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       body: PageView(
         controller: _pageController,
         physics: NeverScrollableScrollPhysics(),
-        onPageChanged: (index) => setState(() => _currentPage = index),
+        onPageChanged: (index) {
+          setState(() => _currentPage = index);
+          if (index < 6) _saveDraftValue(_draftPageKey, index);
+        },
         children: [
           _buildPage(
             'Enter Your Weight',
             'assets/onboarding/onboarding_weight.png',
             TextField(
+              controller: _weightController,
               keyboardType: TextInputType.number,
-              onChanged: (value) => weight = double.tryParse(value),
+              onChanged: (value) {
+                weight = double.tryParse(value);
+                _saveDraftValue(_draftWeightKey, weight);
+                _saveDraftValue('${_draftWeightKey}_text', value);
+              },
               decoration: InputDecoration(labelText: 'Weight in kg'),
             ),
           ),
@@ -194,8 +288,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             'Enter Your Height',
             'assets/onboarding/onboarding_height.png',
             TextField(
+              controller: _heightController,
               keyboardType: TextInputType.number,
-              onChanged: (value) => height = double.tryParse(value),
+              onChanged: (value) {
+                height = double.tryParse(value);
+                _saveDraftValue(_draftHeightKey, height);
+                _saveDraftValue('${_draftHeightKey}_text', value);
+              },
               decoration: InputDecoration(labelText: 'Height in cm'),
             ),
           ),
@@ -203,8 +302,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             'Enter Your Age',
             'assets/onboarding/onboarding_age.png',
             TextField(
+              controller: _ageController,
               keyboardType: TextInputType.number,
-              onChanged: (value) => age = int.tryParse(value),
+              onChanged: (value) {
+                age = int.tryParse(value);
+                _saveDraftValue(_draftAgeKey, age);
+                _saveDraftValue('${_draftAgeKey}_text', value);
+              },
               decoration: InputDecoration(labelText: 'Age in years'),
             ),
           ),
@@ -222,7 +326,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               items: ['Male', 'Female', 'Other']
                   .map((g) => DropdownMenuItem(value: g, child: Text(g)))
                   .toList(),
-              onChanged: (value) => setState(() => gender = value),
+              onChanged: (value) {
+                setState(() => gender = value);
+                _saveDraftValue(_draftGenderKey, value);
+              },
               hint: Text('Select Your Gender'),
             ),
           ),
@@ -235,7 +342,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               items: ['Weight Loss', 'Maintenance', 'Muscle Gain']
                   .map((goal) => DropdownMenuItem(value: goal, child: Text(goal)))
                   .toList(),
-              onChanged: (value) => setState(() => userGoal = value),
+              onChanged: (value) {
+                setState(() => userGoal = value);
+                _saveDraftValue(_draftGoalKey, value);
+              },
               hint: Text('Select Your Goal'),
             ),
           ),

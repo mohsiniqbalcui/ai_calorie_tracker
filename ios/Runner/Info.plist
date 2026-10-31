@@ -28,12 +28,33 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>We need access to your camera to take photos of food for calorie tracking.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>We need access to your microphone to record voice descriptions of food for calorie tracking.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>We need access to your photo library to select food images for calorie tracking.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>We need speech recognition to convert your voice descriptions of food into text.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>We need access to your microphone to record voice descriptions of food for calorie tracking.</string>
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+		<key>UISceneConfigurations</key>
+		<dict>
+			<key>UIWindowSceneSessionRoleApplication</key>
+			<array>
+				<dict>
+					<key>UISceneClassName</key>
+					<string>UIWindowScene</string>
+					<key>UISceneConfigurationName</key>
+					<string>flutter</string>
+					<key>UISceneDelegateClassName</key>
+					<string>FlutterSceneDelegate</string>
+					<key>UISceneStoryboardFile</key>
+					<string>Main</string>
+				</dict>
+			</array>
+		</dict>
+	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

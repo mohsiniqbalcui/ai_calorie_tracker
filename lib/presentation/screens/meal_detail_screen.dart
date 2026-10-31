@@ -1,164 +1,144 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../core/theme/app_theme.dart';
+import '../../core/utils/meal_types.dart';
 import '../../data/models/food_item.dart';
-import 'package:timeago/timeago.dart' as timeago;
 import '../cubit/food_log_cubit.dart';
+import '../cubit/tracker_cubit.dart';
+import '../widgets/common.dart';
 import 'edit_meal_screen.dart';
 
 class MealDetailScreen extends StatelessWidget {
   final FoodItem meal;
+  const MealDetailScreen({super.key, required this.meal});
 
-  const MealDetailScreen({
-    Key? key,
-    required this.meal,
-  }) : super(key: key);
-
-  void _deleteMeal(BuildContext context) {
-    showDialog(
+  Future<void> _delete(BuildContext context) async {
+    final cubit = context.read<FoodLogCubit>();
+    final ok = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Delete Meal'),
-        content: Text('Are you sure you want to delete this meal?'),
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete meal?'),
+        content: Text('"${meal.name}" will be removed from your diary.'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              context.read<FoodLogCubit>().deleteMeal(meal);
-              Navigator.pop(context); // Close the dialog
-              Navigator.pop(context); // Navigate back to the meal list
-            },
-            child: Text('Delete', style: TextStyle(color: Colors.red)),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Theme.of(ctx).colorScheme.error),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
           ),
         ],
       ),
     );
-  }
-
-  void _editMeal(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => EditMealScreen(meal: meal),
-      ),
-    );
+    if (ok == true && context.mounted) {
+      cubit.deleteMeal(meal);
+      Navigator.pop(context);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isFav = context.select((TrackerCubit c) => c.state.isFavorite(meal.name));
+    final type = MealTypes.byKey(meal.mealType);
+    final kcalFromMacros = meal.protein * 4 + meal.carbs * 4 + meal.fat * 9;
+    double share(double kcal) => kcalFromMacros > 0 ? kcal / kcalFromMacros : 0;
+    final time = TimeOfDay.fromDateTime(meal.timestamp).format(context);
+
+    Widget row(IconData icon, String label, String value, Color color) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            children: [
+              Icon(icon, color: color),
+              const SizedBox(width: 14),
+              Expanded(child: Text(label, style: theme.textTheme.titleSmall)),
+              Text(value, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
+            ],
+          ),
+        );
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          meal.name,
-          style: TextStyle(color: Colors.black),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.white,
-        elevation: 1,
-        iconTheme: IconThemeData(color: Colors.black),
+        title: Text(meal.name, overflow: TextOverflow.ellipsis),
         actions: [
           IconButton(
-            icon: Icon(Icons.edit, color: Colors.black),
-            onPressed: () => _editMeal(context),
+            tooltip: 'Favorite',
+            onPressed: () => context.read<TrackerCubit>().toggleFavorite(meal),
+            icon: Icon(isFav ? Icons.star_rounded : Icons.star_outline_rounded, color: isFav ? Colors.amber : null),
           ),
           IconButton(
-            icon: Icon(Icons.delete, color: Colors.red),
-            onPressed: () => _deleteMeal(context),
+            icon: const Icon(Icons.edit_rounded),
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => EditMealScreen(meal: meal))).then((_) {
+              if (context.mounted) Navigator.pop(context);
+            }),
           ),
+          IconButton(icon: Icon(Icons.delete_rounded, color: theme.colorScheme.error), onPressed: () => _delete(context)),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (meal.imageUrl != null)
-              Center(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8.0),
-                  child: Image.network(
-                    meal.imageUrl!,
-                    height: 200,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          if (meal.imageUrl != null && meal.imageUrl!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(18),
+                child: meal.imageUrl!.startsWith('http')
+                    ? Image.network(meal.imageUrl!, height: 200, width: double.infinity, fit: BoxFit.cover)
+                    : Image.file(File(meal.imageUrl!), height: 200, width: double.infinity, fit: BoxFit.cover),
+              ),
+            ),
+          AppCard(
+            child: Column(
+              children: [
+                Text('${meal.calories.round()}', style: theme.textTheme.displaySmall?.copyWith(fontWeight: FontWeight.w800, color: MacroColors.calories)),
+                Text('kcal', style: theme.textTheme.labelLarge),
+                const SizedBox(height: 16),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Row(
+                    children: [
+                      Expanded(flex: (share(meal.protein * 4) * 1000).round().clamp(1, 1000), child: Container(height: 10, color: MacroColors.protein)),
+                      Expanded(flex: (share(meal.carbs * 4) * 1000).round().clamp(1, 1000), child: Container(height: 10, color: MacroColors.carbs)),
+                      Expanded(flex: (share(meal.fat * 9) * 1000).round().clamp(1, 1000), child: Container(height: 10, color: MacroColors.fat)),
+                    ],
                   ),
                 ),
-              ),
-            SizedBox(height: 16),
-            Text(
-              'Details',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 8),
-            DetailListItem(
-              icon: Icons.local_fire_department,
-              label: 'Calories',
-              value: '${meal.calories.toStringAsFixed(1)} kcal',
-            ),
-            DetailListItem(
-              icon: Icons.fitness_center,
-              label: 'Protein',
-              value: '${meal.protein.toStringAsFixed(1)} g',
-            ),
-            DetailListItem(
-              icon: Icons.grain,
-              label: 'Carbs',
-              value: '${meal.carbs.toStringAsFixed(1)} g',
-            ),
-            DetailListItem(
-              icon: Icons.oil_barrel,
-              label: 'Fat',
-              value: '${meal.fat.toStringAsFixed(1)} g',
-            ),
-            DetailListItem(
-              icon: Icons.scale,
-              label: 'Quantity',
-              value: '${meal.quantity.toStringAsFixed(1)} g',
-            ),
-            DetailListItem(
-              icon: Icons.access_time,
-              label: 'Logged',
-              value: timeago.format(meal.timestamp),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class DetailListItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const DetailListItem({
-    Key? key,
-    required this.icon,
-    required this.label,
-    required this.value,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        children: [
-          Icon(icon, size: 28, color: Colors.blue),
-          SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              label,
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87),
+                const SizedBox(height: 14),
+                row(Icons.fitness_center_rounded, 'Protein', '${meal.protein.toStringAsFixed(1)} g', MacroColors.protein),
+                row(Icons.grain_rounded, 'Carbs', '${meal.carbs.toStringAsFixed(1)} g', MacroColors.carbs),
+                row(Icons.opacity_rounded, 'Fat', '${meal.fat.toStringAsFixed(1)} g', MacroColors.fat),
+                if (meal.fiber > 0) row(Icons.grass_rounded, 'Fiber', '${meal.fiber.toStringAsFixed(1)} g', Colors.teal),
+                if (meal.sugar > 0) row(Icons.cake_rounded, 'Sugar', '${meal.sugar.toStringAsFixed(1)} g', Colors.pink),
+                if (meal.sodium > 0) row(Icons.grain_rounded, 'Sodium', '${meal.sodium.round()} mg', Colors.blueGrey),
+              ],
             ),
           ),
-          Text(
-            value,
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w400, color: Colors.grey[700]),
+          const SizedBox(height: 12),
+          AppCard(
+            child: Column(
+              children: [
+                row(type.icon, 'Meal', type.label, theme.colorScheme.primary),
+                row(Icons.scale_rounded, 'Quantity', '${meal.quantity.toStringAsFixed(0)} g', theme.colorScheme.primary),
+                row(Icons.access_time_rounded, 'Logged', '${meal.timestamp.day}/${meal.timestamp.month}  $time', theme.colorScheme.primary),
+                if (meal.note != null && meal.note!.isNotEmpty) ...[
+                  const Divider(),
+                  Align(alignment: Alignment.centerLeft, child: Padding(padding: const EdgeInsets.only(top: 10), child: Text(meal.note!))),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            onPressed: () {
+              final selected = context.read<FoodLogCubit>().state.selectedDate;
+              context.read<FoodLogCubit>().addFromTemplate(meal, mealType: meal.mealType);
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Logged again on ${selected.day}/${selected.month}')));
+              Navigator.pop(context);
+            },
+            icon: const Icon(Icons.replay_rounded),
+            label: const Text('Log again'),
           ),
         ],
       ),

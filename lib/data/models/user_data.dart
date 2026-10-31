@@ -23,6 +23,31 @@ class UserData {
     required this.carbsGoal,
   });
 
+  UserData copyWith({
+    double? weight,
+    double? height,
+    int? age,
+    String? activityLevel,
+    String? gender,
+    String? goal,
+    int? estimatedCalories,
+    int? proteinGoal,
+    int? fatGoal,
+    int? carbsGoal,
+  }) =>
+      UserData(
+        weight: weight ?? this.weight,
+        height: height ?? this.height,
+        age: age ?? this.age,
+        activityLevel: activityLevel ?? this.activityLevel,
+        gender: gender ?? this.gender,
+        goal: goal ?? this.goal,
+        estimatedCalories: estimatedCalories ?? this.estimatedCalories,
+        proteinGoal: proteinGoal ?? this.proteinGoal,
+        fatGoal: fatGoal ?? this.fatGoal,
+        carbsGoal: carbsGoal ?? this.carbsGoal,
+      );
+
   Map<String, dynamic> toJson() => {
         'weight': weight,
         'height': height,
@@ -37,8 +62,8 @@ class UserData {
       };
 
   factory UserData.fromJson(Map<String, dynamic> json) => UserData(
-        weight: json['weight'],
-        height: json['height'],
+        weight: (json['weight'] as num).toDouble(),
+        height: (json['height'] as num).toDouble(),
         age: json['age'],
         activityLevel: json['activityLevel'],
         gender: json['gender'], // Load gender

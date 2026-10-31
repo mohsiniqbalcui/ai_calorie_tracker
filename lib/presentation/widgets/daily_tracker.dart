@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:percent_indicator/circular_percent_indicator.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../core/theme/app_theme.dart';
+import '../cubit/settings_cubit.dart';
+import '../cubit/tracker_cubit.dart';
+import 'common.dart';
 
-import '../../data/local/preference_manager.dart';
-import '../../data/models/user_data.dart';
-import 'macro_indicator.dart';
-
-class DailyTracker extends StatefulWidget {
+/// Calorie ring plus macro bars for the selected day.
+class DailyTracker extends StatelessWidget {
   final double calories;
   final double protein;
   final double carbs;
   final double fat;
 
   const DailyTracker({
+    super.key,
     required this.calories,
     required this.protein,
     required this.carbs,
@@ -20,97 +21,48 @@ class DailyTracker extends StatefulWidget {
   });
 
   @override
-  State<DailyTracker> createState() => _DailyTrackerState();
-}
-
-class _DailyTrackerState extends State<DailyTracker> {
-  UserData? userData;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadUserData();
-  }
-
-  Future<void> _loadUserData() async {
-    final prefs = await SharedPreferences.getInstance();
-    final prefManager = PreferenceManager(prefs);
-    userData = prefManager.getUserData();
-    if (mounted) setState(() {});
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final targetCalories = userData?.estimatedCalories?.toDouble() ?? 2000.0;
+    final theme = Theme.of(context);
+    final s = context.watch<SettingsCubit>().state;
+    final burned = context.select((TrackerCubit c) => c.state.caloriesBurned);
 
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
+    Widget stat(String label, String value, IconData icon, Color color) => Column(
+          children: [
+            Icon(icon, size: 18, color: color),
+            const SizedBox(height: 2),
+            Text(value, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
+            Text(label, style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+          ],
+        );
+
+    return AppCard(
       child: Column(
         children: [
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.green.shade50,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Text(
-              'Daily Calorie Goal: ${userData?.estimatedCalories ?? 2000} kcal',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-          SizedBox(height: 16),
-          CircularPercentIndicator(
-            radius: 80.0,
-            lineWidth: 8.0,
-            percent: (targetCalories > 0
-                    ? (widget.calories / targetCalories)
-                    : 0.0)
-                .clamp(0.0, 1.0),
-            center: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.local_fire_department, color: Colors.orange),
-                Text(
-                  '${widget.calories.toInt()} kcal',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            progressColor: Colors.orange,
-          ),
-          SizedBox(height: 24),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              MacroIndicator(
-                label: 'Protein',
-                value: widget.protein,
-                goal: (userData?.proteinGoal ?? 0).toDouble(),
-                color: Colors.green,
+              CalorieRing(consumed: calories, goal: s.calorieGoal, burned: burned),
+              const SizedBox(width: 20),
+              Expanded(
+                child: Column(
+                  children: [
+                    stat('Eaten', '${calories.round()}', Icons.restaurant_rounded, MacroColors.calories),
+                    const SizedBox(height: 10),
+                    stat('Goal', '${s.calorieGoal}', Icons.flag_rounded, theme.colorScheme.primary),
+                    const SizedBox(height: 10),
+                    stat('Burned', '${burned.round()}', Icons.directions_run_rounded, MacroColors.protein),
+                  ],
+                ),
               ),
-              MacroIndicator(
-                label: 'Fats',
-                value: widget.fat,
-                goal: (userData?.fatGoal ?? 0).toDouble(),
-                color: Colors.orange,
-              ),
-              MacroIndicator(
-                label: 'Carbs',
-                value: widget.carbs,
-                goal: (userData?.carbsGoal ?? 0).toDouble(),
-                color: Colors.amber,
-              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(child: MacroBar(label: 'Protein', value: protein, goal: s.proteinGoal.toDouble(), color: MacroColors.protein)),
+              const SizedBox(width: 14),
+              Expanded(child: MacroBar(label: 'Carbs', value: carbs, goal: s.carbsGoal.toDouble(), color: MacroColors.carbs)),
+              const SizedBox(width: 14),
+              Expanded(child: MacroBar(label: 'Fat', value: fat, goal: s.fatGoal.toDouble(), color: MacroColors.fat)),
             ],
           ),
         ],
