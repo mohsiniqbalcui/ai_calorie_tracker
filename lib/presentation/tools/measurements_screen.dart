@@ -125,6 +125,7 @@ class MeasurementsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Body measurements')),
       floatingActionButton: FloatingActionButton.extended(
+          heroTag: null,
           onPressed: () => _add(context),
           icon: const Icon(Icons.add_rounded),
           label: const Text('Log')),

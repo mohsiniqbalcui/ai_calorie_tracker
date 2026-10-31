@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'dart:io';
 
@@ -41,11 +42,11 @@ class FoodRepository {
 
   Future<Either<String, FoodItem>> detectFoodFromText(
       String foodDescription) async {
-    print('=== REPOSITORY DETECTFOODFROMTEXT CALLED ===');
-    print('Food description: "$foodDescription"');
-    print('Calling food service...');
+    debugPrint('=== REPOSITORY DETECTFOODFROMTEXT CALLED ===');
+    debugPrint('Food description: "$foodDescription"');
+    debugPrint('Calling food service...');
     final result = await _foodService.detectFoodFromText(foodDescription);
-    print('Food service result received');
+    debugPrint('Food service result received');
     return result;
   }
 

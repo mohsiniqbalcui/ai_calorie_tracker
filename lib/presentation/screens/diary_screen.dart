@@ -243,6 +243,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: null,
         onPressed: () => AddFoodFlow.show(context, mealType: _type),
         icon: const Icon(Icons.add_rounded),
         label: const Text('Add food'),

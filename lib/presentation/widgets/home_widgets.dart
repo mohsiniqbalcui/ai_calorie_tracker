@@ -113,16 +113,24 @@ class CalorieSummaryCard extends StatelessWidget {
                 decoration: BoxDecoration(
                     color: color, borderRadius: BorderRadius.circular(4))),
             const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(value,
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w800)),
-                Text(label,
-                    style: theme.textTheme.labelMedium
-                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-              ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(value,
+                        style: theme.textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w800)),
+                  ),
+                  Text(label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant)),
+                ],
+              ),
             ),
           ],
         );
@@ -139,7 +147,8 @@ class CalorieSummaryCard extends StatelessWidget {
                     consumed: food.totalCalories,
                     goal: s.calorieGoal,
                     burned: burned,
-                    radius: 72),
+                    radius: (MediaQuery.of(context).size.width * 0.19)
+                        .clamp(52.0, 72.0)),
               ),
               const SizedBox(width: 22),
               Expanded(

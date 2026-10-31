@@ -1,7 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
-import 'package:permission_handler/permission_handler.dart';
 import '../../data/services/speech_service.dart';
 import 'text_input_dialog.dart';
 
@@ -41,19 +39,19 @@ class _SimpleSpeechDialogState extends State<SimpleSpeechDialog> {
 
   Future<void> _initializeSpeech() async {
     try {
-      print('Initializing speech service...');
+      debugPrint('Initializing speech service...');
       final available = await _speechService.initialize();
-      print('Speech service available: $available');
+      debugPrint('Speech service available: $available');
     } catch (e) {
-      print('Error initializing speech: $e');
+      debugPrint('Error initializing speech: $e');
     }
   }
 
   void _startListening() async {
-    print('Starting to listen...');
+    debugPrint('Starting to listen...');
 
     if (!_speechService.isInitialized) {
-      print('Speech service not initialized, trying to initialize...');
+      debugPrint('Speech service not initialized, trying to initialize...');
       final available = await _speechService.initialize();
       if (!available) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -72,7 +70,7 @@ class _SimpleSpeechDialogState extends State<SimpleSpeechDialog> {
       _recordingTime = 0;
     });
 
-    print('Starting timer...');
+    debugPrint('Starting timer...');
     // Start timer
     _timer = Timer.periodic(Duration(seconds: 1), (timer) {
       setState(() {
@@ -80,28 +78,28 @@ class _SimpleSpeechDialogState extends State<SimpleSpeechDialog> {
       });
 
       if (_recordingTime >= 20) {
-        print('Timer reached 20 seconds, stopping...');
+        debugPrint('Timer reached 20 seconds, stopping...');
         _stopListening();
         // Add a small delay to ensure stopListening completes
         Future.delayed(Duration(milliseconds: 500), () {
           if (_recognizedText.trim().isNotEmpty) {
-            print('Auto-submitting recognized text: $_recognizedText');
+            debugPrint('Auto-submitting recognized text: $_recognizedText');
             _handleSubmit();
           }
         });
       }
     });
 
-    print('Starting speech recognition...');
+    debugPrint('Starting speech recognition...');
     await _speechService.startListening(
       onPartial: (text) {
-        print('Speech partial: $text');
+        debugPrint('Speech partial: $text');
         setState(() {
           _partialText = text;
         });
       },
       onFinal: (text) {
-        print('Speech final: $text');
+        debugPrint('Speech final: $text');
         setState(() {
           if (_recognizedText.isEmpty) {
             _recognizedText = text;
@@ -112,7 +110,7 @@ class _SimpleSpeechDialogState extends State<SimpleSpeechDialog> {
         });
       },
       onError: (error) {
-        print('Speech error: $error');
+        debugPrint('Speech error: $error');
         _stopListening();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Speech error: $error')),
@@ -122,27 +120,27 @@ class _SimpleSpeechDialogState extends State<SimpleSpeechDialog> {
   }
 
   void _stopListening() {
-    print('Stopping listening...');
+    debugPrint('Stopping listening...');
     _speechService.stopListening();
     _timer?.cancel();
     setState(() {
       _isListening = false;
     });
-    print('Stopped listening. Current recognized text: $_recognizedText');
+    debugPrint('Stopped listening. Current recognized text: $_recognizedText');
   }
 
   void _handleManualStop() {
-    print('Manual stop triggered');
+    debugPrint('Manual stop triggered');
     _stopListening();
     // Add a small delay to ensure stopListening completes
     Future.delayed(Duration(milliseconds: 500), () {
       final textToCheck =
           _recognizedText.isNotEmpty ? _recognizedText : _partialText;
       if (textToCheck.trim().isNotEmpty) {
-        print('Manual submission with text: $textToCheck');
+        debugPrint('Manual submission with text: $textToCheck');
         _handleSubmit();
       } else {
-        print('No text recognized, showing message');
+        debugPrint('No text recognized, showing message');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
               content: Text(
@@ -157,16 +155,16 @@ class _SimpleSpeechDialogState extends State<SimpleSpeechDialog> {
     final textToSubmit =
         _recognizedText.isNotEmpty ? _recognizedText : _partialText;
 
-    print('=== HANDLE SUBMIT CALLED ===');
-    print('Recognized text: "$_recognizedText"');
-    print('Partial text: "$_partialText"');
-    print('Text to submit: "$textToSubmit"');
-    print('Text length: ${textToSubmit.length}');
-    print('Text trimmed: "${textToSubmit.trim()}"');
-    print('Text trimmed length: ${textToSubmit.trim().length}');
+    debugPrint('=== HANDLE SUBMIT CALLED ===');
+    debugPrint('Recognized text: "$_recognizedText"');
+    debugPrint('Partial text: "$_partialText"');
+    debugPrint('Text to submit: "$textToSubmit"');
+    debugPrint('Text length: ${textToSubmit.length}');
+    debugPrint('Text trimmed: "${textToSubmit.trim()}"');
+    debugPrint('Text trimmed length: ${textToSubmit.trim().length}');
 
     if (textToSubmit.trim().isEmpty) {
-      print('Text is empty, showing error message');
+      debugPrint('Text is empty, showing error message');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Please speak a food description')),
       );
@@ -178,12 +176,12 @@ class _SimpleSpeechDialogState extends State<SimpleSpeechDialog> {
     });
 
     try {
-      print('Calling widget.onSubmitted with: "${textToSubmit.trim()}"');
+      debugPrint('Calling widget.onSubmitted with: "${textToSubmit.trim()}"');
       await widget.onSubmitted(textToSubmit.trim());
-      print('Successfully submitted to Gemini API');
+      debugPrint('Successfully submitted to Gemini API');
       Navigator.of(context).pop();
     } catch (e) {
-      print('Error submitting to Gemini API: $e');
+      debugPrint('Error submitting to Gemini API: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: ${e.toString()}')),
       );
@@ -220,7 +218,7 @@ class _SimpleSpeechDialogState extends State<SimpleSpeechDialog> {
             Container(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
+                color: Colors.red.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: Colors.red, width: 2),
               ),
@@ -246,7 +244,7 @@ class _SimpleSpeechDialogState extends State<SimpleSpeechDialog> {
               boxShadow: _isListening
                   ? [
                       BoxShadow(
-                        color: Colors.red.withOpacity(0.3),
+                        color: Colors.red.withValues(alpha: 0.3),
                         blurRadius: 20,
                         spreadRadius: 5,
                       ),
@@ -281,7 +279,8 @@ class _SimpleSpeechDialogState extends State<SimpleSpeechDialog> {
                 border:
                     Border.all(color: _isListening ? Colors.blue : Colors.grey),
                 borderRadius: BorderRadius.circular(8),
-                color: _isListening ? Colors.blue.withOpacity(0.05) : null,
+                color:
+                    _isListening ? Colors.blue.withValues(alpha: 0.05) : null,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -312,7 +311,7 @@ class _SimpleSpeechDialogState extends State<SimpleSpeechDialog> {
               decoration: BoxDecoration(
                 border: Border.all(color: Colors.orange),
                 borderRadius: BorderRadius.circular(8),
-                color: Colors.orange.withOpacity(0.05),
+                color: Colors.orange.withValues(alpha: 0.05),
               ),
               child: Row(
                 children: [

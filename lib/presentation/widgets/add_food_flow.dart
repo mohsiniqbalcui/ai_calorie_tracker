@@ -216,18 +216,23 @@ class _AddFoodSheetState extends State<_AddFoodSheet> {
                 style: theme.textTheme.titleLarge
                     ?.copyWith(fontWeight: FontWeight.w800)),
             const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              children: [
-                for (final m in MealTypes.all)
-                  ChoiceChip(
-                    avatar: Icon(m.icon, size: 16),
-                    label: Text(m.label),
-                    selected: _mealType == m.key,
-                    onSelected: (_) => setState(() => _mealType = m.key),
-                  ),
-              ],
+            SizedBox(
+              height: 44,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  for (final m in MealTypes.all)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        avatar: Icon(m.icon, size: 18),
+                        label: Text(m.label),
+                        selected: _mealType == m.key,
+                        onSelected: (_) => setState(() => _mealType = m.key),
+                      ),
+                    ),
+                ],
+              ),
             ),
             const SizedBox(height: 16),
             GridView.count(

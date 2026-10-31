@@ -90,6 +90,7 @@ class HomeScreen extends StatelessWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: null,
         onPressed: () => AddFoodFlow.show(context),
         icon: const Icon(Icons.add_rounded),
         label: const Text('Add food'),

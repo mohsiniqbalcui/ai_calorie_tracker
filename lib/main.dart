@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
@@ -27,7 +25,7 @@ Future<void> _loadEnvironmentFile() async {
   try {
     await dotenv.load(fileName: '.env');
   } catch (e) {
-    print('Error loading .env file: $e');
+    debugPrint('Error loading .env file: $e');
     // Provide a fallback or handle error as needed
   }
 }

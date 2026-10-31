@@ -228,7 +228,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   // ---- UI ---------------------------------------------------------------
 
-  Widget _illustration(String assetPath) {
+  Widget _illustration(String assetPath, {double fraction = 0.32}) {
     final size = MediaQuery.of(context).size;
     final keyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
     return AnimatedSize(
@@ -237,7 +237,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       child: keyboardOpen
           ? const SizedBox(width: double.infinity)
           : Container(
-              height: size.height * 0.32,
+              height: size.height * fraction,
               width: double.infinity,
               margin: const EdgeInsets.only(bottom: 24),
               decoration: BoxDecoration(
@@ -258,6 +258,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Widget _stepPage({
+    double fraction = 0.32,
     required String title,
     required String subtitle,
     required String asset,
@@ -270,7 +271,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _illustration(asset),
+          _illustration(asset, fraction: fraction),
           Text(title,
               style: theme.textTheme.headlineSmall
                   ?.copyWith(fontWeight: FontWeight.w800)),
@@ -499,6 +500,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     title: 'How active are you?',
                     subtitle: 'Pick what fits a typical week.',
                     asset: 'assets/onboarding/onboarding_activity_level.png',
+                    fraction: 0.2,
                     child: _choiceList(_activityLevels, activityLevel, (v) {
                       setState(() => activityLevel = v);
                       _saveDraftValue(_draftActivityKey, v);
@@ -508,6 +510,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     title: 'Select your gender',
                     subtitle: 'This only affects the calorie formula.',
                     asset: 'assets/onboarding/onboarding_gender.png',
+                    fraction: 0.2,
                     child: _choiceList(_genders, gender, (v) {
                       setState(() => gender = v);
                       _saveDraftValue(_draftGenderKey, v);
@@ -517,6 +520,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     title: 'What is your goal?',
                     subtitle: 'You can change this any time in Settings.',
                     asset: 'assets/onboarding/onboarding_goal.png',
+                    fraction: 0.2,
                     child: _choiceList(_goals, userGoal, (v) {
                       setState(() => userGoal = v);
                       _saveDraftValue(_draftGoalKey, v);

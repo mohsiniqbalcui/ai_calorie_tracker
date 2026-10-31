@@ -41,6 +41,7 @@ class RecipesScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: Text(pick ? 'Pick a recipe' : 'My recipes')),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: null,
         onPressed: () => Navigator.push(context,
             MaterialPageRoute(builder: (_) => const RecipeEditorScreen())),
         icon: const Icon(Icons.add_rounded),

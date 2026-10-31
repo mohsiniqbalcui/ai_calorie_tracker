@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:dartz/dartz.dart';
@@ -7,21 +8,27 @@ import 'package:flutter_gemini/flutter_gemini.dart';
 import '../models/food_item.dart';
 
 class FoodService {
-  final String _model = 'gemini-1.5-pro';
-
   // Load the API key from the environment
   String get _apiKey => dotenv.env['GOOGLE_AI_API_KEY'] ?? '';
 
-  // Initialize Gemini in the constructor
-  FoodService() {
-    if (_apiKey.isEmpty) {
-      throw Exception('Google AI API key not found in environment variables');
-    }
+  bool _initialized = false;
 
-    // Initialize the Gemini instance
-    Gemini.init(apiKey: _apiKey);
+  static const _missingKey =
+      'AI logging is not configured. Add GOOGLE_AI_API_KEY to the .env file, or log with search, barcode or manual entry.';
+
+  /// Starts Gemini on first use so the app still launches without an API key.
+  bool _ensureInitialized() {
+    final key = _apiKey;
+    if (key.isEmpty || key == 'your_api_key_here') return false;
+    if (!_initialized) {
+      Gemini.init(apiKey: key);
+      _initialized = true;
+    }
+    return true;
   }
+
   Future<Either<String, FoodItem>> detectFoodAndCalories(File imageFile) async {
+    if (!_ensureInitialized()) return const Left(_missingKey);
     try {
       if (!imageFile.existsSync()) {
         return Left('File not found: ${imageFile.path}');
@@ -85,25 +92,26 @@ class FoodService {
         quantity: 100.0,
         timestamp: DateTime.now(),
       );
-      print('Successfully created food item: ${foodItem.name}');
+      debugPrint('Successfully created food item: ${foodItem.name}');
       return Right(foodItem);
     } catch (e) {
-      print('Error in detectFoodAndCalories: $e');
+      debugPrint('Error in detectFoodAndCalories: $e');
       return Left('Failed to detect food: ${e.toString()}');
     }
   }
 
   Future<Either<String, FoodItem>> detectFoodFromText(
       String foodDescription) async {
-    print('=== FOOD SERVICE DETECTFOODFROMTEXT CALLED ===');
-    print('Food description: "$foodDescription"');
+    debugPrint('=== FOOD SERVICE DETECTFOODFROMTEXT CALLED ===');
+    debugPrint('Food description: "$foodDescription"');
+    if (!_ensureInitialized()) return const Left(_missingKey);
     try {
       if (foodDescription.trim().isEmpty) {
-        print('Food description is empty, returning error');
+        debugPrint('Food description is empty, returning error');
         return Left('Food description cannot be empty');
       }
 
-      print('Calling Gemini API...');
+      debugPrint('Calling Gemini API...');
       final response = await Gemini.instance.text(
         'Analyze this food description and estimate its nutritional values. '
         'Food: "$foodDescription" '
@@ -111,7 +119,7 @@ class FoodService {
         'Return ONLY a valid JSON object in this exact format: {"name": "food name", "calories": 100, "protein": 10, "carbs": 20, "fat": 5} '
         'Do not include any other text, explanations, or formatting. Just the JSON object.',
       );
-      print('Gemini API response received');
+      debugPrint('Gemini API response received');
 
       final output = response?.output;
       if (output == null || output.isEmpty) {
@@ -163,10 +171,10 @@ class FoodService {
         quantity: 100.0,
         timestamp: DateTime.now(),
       );
-      print('Successfully created food item: ${foodItem.name}');
+      debugPrint('Successfully created food item: ${foodItem.name}');
       return Right(foodItem);
     } catch (e) {
-      print('Error in detectFoodFromText: $e');
+      debugPrint('Error in detectFoodFromText: $e');
       return Left('Failed to detect food from text: ${e.toString()}');
     }
   }

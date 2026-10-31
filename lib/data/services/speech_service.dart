@@ -19,7 +19,7 @@ class SpeechService {
         final available = await _speechToText.initialize(
           onStatus: _handleStatus,
           onError: (err) {
-            print('Speech error (web): ${err.errorMsg}');
+            debugPrint('Speech error (web): ${err.errorMsg}');
           },
         );
         _isInitialized = available;
@@ -48,18 +48,18 @@ class SpeechService {
       final available = await _speechToText.initialize(
         onStatus: _handleStatus,
         onError: (err) {
-          print('Speech error: ${err.errorMsg}');
+          debugPrint('Speech error: ${err.errorMsg}');
         },
       );
       _isInitialized = available;
 
       if (!available) {
-        print('Speech recognition initialization failed');
+        debugPrint('Speech recognition initialization failed');
       }
 
       return available;
     } catch (e) {
-      print('Error initializing speech service: $e');
+      debugPrint('Error initializing speech service: $e');
       _isInitialized = false;
       return false;
     }
@@ -88,8 +88,8 @@ class SpeechService {
     void startSession() {
       _speechToText.listen(
         onResult: (result) {
-          print('Speech recognition result: ${result.recognizedWords}');
-          print('Final result: ${result.finalResult}');
+          debugPrint('Speech recognition result: ${result.recognizedWords}');
+          debugPrint('Final result: ${result.finalResult}');
           recognizedText = result.recognizedWords;
           if (result.finalResult) {
             onFinal(result.recognizedWords);
@@ -104,7 +104,7 @@ class SpeechService {
         listenMode: ListenMode.dictation,
         cancelOnError: false,
         onSoundLevelChange: (level) {
-          print('Sound level: $level');
+          debugPrint('Sound level: $level');
         },
       );
     }
@@ -116,11 +116,11 @@ class SpeechService {
 
   void stopListening() {
     if (_isListening) {
-      print('Stopping speech recognition...');
+      debugPrint('Stopping speech recognition...');
       _speechToText.stop();
       _isListening = false;
       _sessionStopwatch.stop();
-      print('Speech recognition stopped');
+      debugPrint('Speech recognition stopped');
     }
   }
 
@@ -168,7 +168,7 @@ class SpeechService {
             cancelOnError: false,
           );
         } catch (e) {
-          print('Error auto-restarting listening: $e');
+          debugPrint('Error auto-restarting listening: $e');
         }
       }
     }

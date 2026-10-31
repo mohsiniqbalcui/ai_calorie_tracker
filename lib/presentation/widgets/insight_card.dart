@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/utils/insights.dart';
@@ -27,7 +29,12 @@ class InsightCard extends StatelessWidget {
     );
     final color = insight.color ?? Theme.of(context).colorScheme.primary;
     return AppCard(
-      color: color.withValues(alpha: 0.10),
+      color: insight.color == null
+          ? Theme.of(context)
+              .colorScheme
+              .primaryContainer
+              .withValues(alpha: 0.6)
+          : color.withValues(alpha: 0.10),
       child: Row(
         children: [
           Icon(insight.icon, color: color),
@@ -55,35 +62,65 @@ class StreakChip extends StatelessWidget {
   }
 }
 
-/// Success and error banner driven by the food log cubit.
-class StatusBanner extends StatelessWidget {
+/// Success and error banner driven by the food log cubit. Success messages
+/// dismiss themselves after a few seconds; errors stay until closed.
+class StatusBanner extends StatefulWidget {
   const StatusBanner({super.key});
 
   @override
+  State<StatusBanner> createState() => _StatusBannerState();
+}
+
+class _StatusBannerState extends State<StatusBanner> {
+  Timer? _timer;
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final state = context.watch<FoodLogCubit>().state;
-    if (state.error == null && state.successMessage == null)
-      return const SizedBox.shrink();
-    final isError = state.error != null;
-    final theme = Theme.of(context);
-    final color = isError ? theme.colorScheme.error : const Color(0xFF22A06B);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: AppCard(
-        color: color.withValues(alpha: 0.12),
-        padding: const EdgeInsets.fromLTRB(14, 8, 4, 8),
-        child: Row(
-          children: [
-            Icon(isError ? Icons.error_rounded : Icons.check_circle_rounded,
-                color: color),
-            const SizedBox(width: 10),
-            Expanded(child: Text(state.error ?? state.successMessage ?? '')),
-            IconButton(
-                onPressed: () => context.read<FoodLogCubit>().clearMessages(),
-                icon: const Icon(Icons.close_rounded)),
-          ],
-        ),
-      ),
+    return BlocListener<FoodLogCubit, FoodLogState>(
+      listenWhen: (a, b) =>
+          a.successMessage != b.successMessage && b.successMessage != null,
+      listener: (context, state) {
+        _timer?.cancel();
+        _timer = Timer(const Duration(seconds: 3), () {
+          if (mounted) context.read<FoodLogCubit>().clearMessages();
+        });
+      },
+      child: Builder(builder: (context) {
+        final state = context.watch<FoodLogCubit>().state;
+        if (state.error == null && state.successMessage == null)
+          return const SizedBox.shrink();
+        final isError = state.error != null;
+        final theme = Theme.of(context);
+        final color =
+            isError ? theme.colorScheme.error : const Color(0xFF22A06B);
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: AppCard(
+            color: color.withValues(alpha: 0.10),
+            padding: const EdgeInsets.fromLTRB(14, 8, 4, 8),
+            child: Row(
+              children: [
+                Icon(isError ? Icons.error_rounded : Icons.check_circle_rounded,
+                    color: color),
+                const SizedBox(width: 10),
+                Expanded(
+                    child: Text(state.error ?? state.successMessage ?? '')),
+                IconButton(
+                    tooltip: 'Dismiss',
+                    onPressed: () =>
+                        context.read<FoodLogCubit>().clearMessages(),
+                    icon: const Icon(Icons.close_rounded)),
+              ],
+            ),
+          ),
+        );
+      }),
     );
   }
 }

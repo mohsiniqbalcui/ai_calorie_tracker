@@ -59,7 +59,7 @@ class _SpeechInputDialogState extends State<SpeechInputDialog> {
 
   Future<void> _initializeSpeech() async {
     try {
-      print('Starting speech initialization...');
+      debugPrint('Starting speech initialization...');
 
       if (kIsWeb) {
         setState(() {
@@ -72,7 +72,7 @@ class _SpeechInputDialogState extends State<SpeechInputDialog> {
       // Check permission status first
       final permissionStatus =
           await _speechService.getMicrophonePermissionStatus();
-      print('Permission status: $permissionStatus');
+      debugPrint('Permission status: $permissionStatus');
 
       if (permissionStatus == PermissionStatus.denied) {
         setState(() {
@@ -101,7 +101,7 @@ class _SpeechInputDialogState extends State<SpeechInputDialog> {
 
       await _tryInitializeSpeech();
     } catch (e) {
-      print('Error in _initializeSpeech: $e');
+      debugPrint('Error in _initializeSpeech: $e');
       setState(() {
         _isInitializing = false;
       });
@@ -110,16 +110,16 @@ class _SpeechInputDialogState extends State<SpeechInputDialog> {
   }
 
   Future<void> _tryInitializeSpeech() async {
-    print('Attempting to initialize speech recognition...');
+    debugPrint('Attempting to initialize speech recognition...');
     final available = await _speechService.initialize();
-    print('Speech recognition available: $available');
+    debugPrint('Speech recognition available: $available');
 
     setState(() {
       _isInitializing = false;
     });
 
     if (!available && mounted) {
-      print('Speech recognition not available, showing error message');
+      debugPrint('Speech recognition not available, showing error message');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -136,7 +136,7 @@ class _SpeechInputDialogState extends State<SpeechInputDialog> {
       );
       Navigator.of(context).pop();
     } else {
-      print('Speech recognition initialized successfully');
+      debugPrint('Speech recognition initialized successfully');
     }
   }
 
@@ -213,12 +213,12 @@ class _SpeechInputDialogState extends State<SpeechInputDialog> {
     });
 
     await _speechService.startListening(onPartial: (text) {
-      print('Speech partial: $text');
+      debugPrint('Speech partial: $text');
       setState(() {
         _recognizedText = text;
       });
     }, onFinal: (text) {
-      print('Speech final: $text');
+      debugPrint('Speech final: $text');
       setState(() {
         if (_recognizedText.isEmpty) {
           _recognizedText = text;
@@ -339,7 +339,7 @@ class _SpeechInputDialogState extends State<SpeechInputDialog> {
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
+                    color: Colors.red.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: Colors.red, width: 2),
                   ),
@@ -365,7 +365,7 @@ class _SpeechInputDialogState extends State<SpeechInputDialog> {
                   width: double.infinity,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.grey.withOpacity(0.3),
+                    color: Colors.grey.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(2),
                   ),
                   child: FractionallySizedBox(
@@ -392,7 +392,7 @@ class _SpeechInputDialogState extends State<SpeechInputDialog> {
                   boxShadow: _isListening
                       ? [
                           BoxShadow(
-                            color: Colors.red.withOpacity(0.3),
+                            color: Colors.red.withValues(alpha: 0.3),
                             blurRadius: 20,
                             spreadRadius: 5,
                           ),
@@ -436,7 +436,9 @@ class _SpeechInputDialogState extends State<SpeechInputDialog> {
                     border: Border.all(
                         color: _isListening ? Colors.blue : Colors.grey),
                     borderRadius: BorderRadius.circular(8),
-                    color: _isListening ? Colors.blue.withOpacity(0.05) : null,
+                    color: _isListening
+                        ? Colors.blue.withValues(alpha: 0.05)
+                        : null,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
