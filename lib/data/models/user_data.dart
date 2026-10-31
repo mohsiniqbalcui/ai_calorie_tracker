@@ -64,13 +64,13 @@ class UserData {
   factory UserData.fromJson(Map<String, dynamic> json) => UserData(
         weight: (json['weight'] as num).toDouble(),
         height: (json['height'] as num).toDouble(),
-        age: json['age'],
-        activityLevel: json['activityLevel'],
-        gender: json['gender'], // Load gender
-        goal: json['goal'],
-        estimatedCalories: json['estimatedCalories'],
-        proteinGoal: json['proteinGoal'],
-        fatGoal: json['fatGoal'],
-        carbsGoal: json['carbsGoal'],
+        age: (json['age'] as num).round(),
+        activityLevel: json['activityLevel'] as String,
+        gender: json['gender'] as String,
+        goal: json['goal'] as String,
+        estimatedCalories: (json['estimatedCalories'] as num).round(),
+        proteinGoal: (json['proteinGoal'] as num).round(),
+        fatGoal: (json['fatGoal'] as num).round(),
+        carbsGoal: (json['carbsGoal'] as num).round(),
       );
 }
