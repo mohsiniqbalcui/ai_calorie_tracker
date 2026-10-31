@@ -26,12 +26,17 @@ class DailyTracker extends StatelessWidget {
     final s = context.watch<SettingsCubit>().state;
     final burned = context.select((TrackerCubit c) => c.state.caloriesBurned);
 
-    Widget stat(String label, String value, IconData icon, Color color) => Column(
+    Widget stat(String label, String value, IconData icon, Color color) =>
+        Column(
           children: [
             Icon(icon, size: 18, color: color),
             const SizedBox(height: 2),
-            Text(value, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
-            Text(label, style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+            Text(value,
+                style: theme.textTheme.titleSmall
+                    ?.copyWith(fontWeight: FontWeight.w800)),
+            Text(label,
+                style: theme.textTheme.labelSmall
+                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
           ],
         );
 
@@ -40,16 +45,20 @@ class DailyTracker extends StatelessWidget {
         children: [
           Row(
             children: [
-              CalorieRing(consumed: calories, goal: s.calorieGoal, burned: burned),
+              CalorieRing(
+                  consumed: calories, goal: s.calorieGoal, burned: burned),
               const SizedBox(width: 20),
               Expanded(
                 child: Column(
                   children: [
-                    stat('Eaten', '${calories.round()}', Icons.restaurant_rounded, MacroColors.calories),
+                    stat('Eaten', '${calories.round()}',
+                        Icons.restaurant_rounded, MacroColors.calories),
                     const SizedBox(height: 10),
-                    stat('Goal', '${s.calorieGoal}', Icons.flag_rounded, theme.colorScheme.primary),
+                    stat('Goal', '${s.calorieGoal}', Icons.flag_rounded,
+                        theme.colorScheme.primary),
                     const SizedBox(height: 10),
-                    stat('Burned', '${burned.round()}', Icons.directions_run_rounded, MacroColors.protein),
+                    stat('Burned', '${burned.round()}',
+                        Icons.directions_run_rounded, MacroColors.protein),
                   ],
                 ),
               ),
@@ -58,11 +67,26 @@ class DailyTracker extends StatelessWidget {
           const SizedBox(height: 20),
           Row(
             children: [
-              Expanded(child: MacroBar(label: 'Protein', value: protein, goal: s.proteinGoal.toDouble(), color: MacroColors.protein)),
+              Expanded(
+                  child: MacroBar(
+                      label: 'Protein',
+                      value: protein,
+                      goal: s.proteinGoal.toDouble(),
+                      color: MacroColors.protein)),
               const SizedBox(width: 14),
-              Expanded(child: MacroBar(label: 'Carbs', value: carbs, goal: s.carbsGoal.toDouble(), color: MacroColors.carbs)),
+              Expanded(
+                  child: MacroBar(
+                      label: 'Carbs',
+                      value: carbs,
+                      goal: s.carbsGoal.toDouble(),
+                      color: MacroColors.carbs)),
               const SizedBox(width: 14),
-              Expanded(child: MacroBar(label: 'Fat', value: fat, goal: s.fatGoal.toDouble(), color: MacroColors.fat)),
+              Expanded(
+                  child: MacroBar(
+                      label: 'Fat',
+                      value: fat,
+                      goal: s.fatGoal.toDouble(),
+                      color: MacroColors.fat)),
             ],
           ),
         ],

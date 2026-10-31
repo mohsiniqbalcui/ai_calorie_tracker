@@ -64,7 +64,8 @@ class PermissionDialog extends StatelessWidget {
       context: context,
       builder: (context) => PermissionDialog(
         title: 'Microphone Permission Required',
-        message: 'This app needs microphone access to use voice input for food logging. Please grant permission to continue.',
+        message:
+            'This app needs microphone access to use voice input for food logging. Please grant permission to continue.',
         onGranted: onGranted,
         onDenied: onDenied,
       ),

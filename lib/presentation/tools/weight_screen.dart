@@ -21,10 +21,12 @@ class WeightScreen extends StatelessWidget {
           controller: controller,
           autofocus: true,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: InputDecoration(labelText: 'Weight (${Units.weightUnit(settings.metric)})'),
+          decoration: InputDecoration(
+              labelText: 'Weight (${Units.weightUnit(settings.metric)})'),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           FilledButton(
             onPressed: () {
               final v = double.tryParse(controller.text.trim());
@@ -46,11 +48,15 @@ class WeightScreen extends StatelessWidget {
     final settings = context.watch<SettingsCubit>().state;
     final metric = settings.metric;
     final latest = weights.isEmpty ? settings.user?.weight : weights.last.kg;
-    final change = weights.length >= 2 ? weights.last.kg - weights.first.kg : 0.0;
+    final change =
+        weights.length >= 2 ? weights.last.kg - weights.first.kg : 0.0;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Weight tracker')),
-      floatingActionButton: FloatingActionButton.extended(onPressed: () => _add(context), icon: const Icon(Icons.add_rounded), label: const Text('Log weight')),
+      floatingActionButton: FloatingActionButton.extended(
+          onPressed: () => _add(context),
+          icon: const Icon(Icons.add_rounded),
+          label: const Text('Log weight')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -62,7 +68,9 @@ class WeightScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Current', style: theme.textTheme.labelMedium),
-                      Text(latest == null ? '—' : Units.weight(latest, metric), style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800)),
+                      Text(latest == null ? '—' : Units.weight(latest, metric),
+                          style: theme.textTheme.headlineSmall
+                              ?.copyWith(fontWeight: FontWeight.w800)),
                     ],
                   ),
                 ),
@@ -76,7 +84,11 @@ class WeightScreen extends StatelessWidget {
                       Text('Change', style: theme.textTheme.labelMedium),
                       Text(
                         '${change > 0 ? '+' : ''}${(metric ? change : Units.kgToLb(change)).toStringAsFixed(1)} ${Units.weightUnit(metric)}',
-                        style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800, color: change == 0 ? null : (change < 0 ? Colors.green : Colors.orange)),
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: change == 0
+                                ? null
+                                : (change < 0 ? Colors.green : Colors.orange)),
                       ),
                     ],
                   ),
@@ -87,7 +99,10 @@ class WeightScreen extends StatelessWidget {
           const SizedBox(height: 12),
           AppCard(child: WeightChart(entries: weights, metric: metric)),
           const SectionTitle('History'),
-          if (weights.isEmpty) const Padding(padding: EdgeInsets.all(24), child: Center(child: Text('No weigh-ins yet.'))),
+          if (weights.isEmpty)
+            const Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(child: Text('No weigh-ins yet.'))),
           for (final w in weights.reversed)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
@@ -95,9 +110,16 @@ class WeightScreen extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(16, 4, 4, 4),
                 child: Row(
                   children: [
-                    Expanded(child: Text(Units.weight(w.kg, metric), style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700))),
-                    Text(DateFmt.short(w.date), style: theme.textTheme.labelMedium),
-                    IconButton(onPressed: () => context.read<TrackerCubit>().deleteWeight(w), icon: const Icon(Icons.delete_outline_rounded)),
+                    Expanded(
+                        child: Text(Units.weight(w.kg, metric),
+                            style: theme.textTheme.titleSmall
+                                ?.copyWith(fontWeight: FontWeight.w700))),
+                    Text(DateFmt.short(w.date),
+                        style: theme.textTheme.labelMedium),
+                    IconButton(
+                        onPressed: () =>
+                            context.read<TrackerCubit>().deleteWeight(w),
+                        icon: const Icon(Icons.delete_outline_rounded)),
                   ],
                 ),
               ),

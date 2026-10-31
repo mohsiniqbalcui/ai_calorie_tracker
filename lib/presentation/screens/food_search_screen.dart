@@ -1,23 +1,73 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/meal_types.dart';
 import '../../data/food_database.dart';
+import '../../data/models/food_item.dart';
+import '../../data/remote/open_food_facts.dart';
 import '../cubit/food_log_cubit.dart';
 import '../cubit/settings_cubit.dart';
+import '../cubit/tracker_cubit.dart';
 import '../widgets/common.dart';
+import '../widgets/food_thumb.dart';
+import 'barcode_scan_screen.dart';
+import 'food_details_screen.dart';
 
-/// What the user picked in the serving sheet.
+/// What the user picked on the food details screen.
 class ServingResult {
   final FoodEntry entry;
   final double grams;
   final String mealType;
-  const ServingResult(this.entry, this.grams, this.mealType);
+  final DateTime date;
+  const ServingResult(this.entry, this.grams, this.mealType, this.date);
   FoodPortion get portion => entry.portion(grams);
 }
 
-/// Search the built-in food database. In [pick] mode it returns the chosen
-/// food and amount instead of logging it (used by recipes and the planner).
+/// Adds a food picked on the details screen to the diary.
+void logServing(BuildContext context, ServingResult result) {
+  final p = result.portion;
+  context.read<FoodLogCubit>().addManual(
+        name: result.entry.name,
+        calories: p.kcal,
+        protein: p.protein,
+        carbs: p.carbs,
+        fat: p.fat,
+        quantity: p.grams,
+        mealType: result.mealType,
+        fiber: p.fiber,
+        sugar: p.sugar,
+        sodium: p.sodium,
+        date: result.date,
+        imageUrl: result.entry.imageUrl,
+      );
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(SnackBar(
+        content: Text('Added ${result.entry.name} · ${p.kcal.round()} kcal')));
+}
+
+/// Scan a barcode, confirm the serving, and log it.
+Future<void> scanAndLog(BuildContext context, {String? mealType}) async {
+  final entry = await Navigator.push<FoodEntry>(
+      context, MaterialPageRoute(builder: (_) => const BarcodeScanScreen()));
+  if (entry == null || !context.mounted) return;
+  final result = await Navigator.push<ServingResult>(
+    context,
+    MaterialPageRoute(
+        builder: (_) => FoodDetailsScreen(
+            entry: entry, mealType: mealType ?? MealTypes.now())),
+  );
+  if (result != null && context.mounted) logServing(context, result);
+}
+
+enum _OnlineState { idle, loading, done, offline, error }
+
+/// Search-first food picker. Built-in foods answer instantly and work
+/// offline; Open Food Facts results are added after a short debounce.
+/// In [pick] mode it returns the chosen food instead of logging it (used by
+/// recipes and the planner).
 class FoodSearchScreen extends StatefulWidget {
   final bool pick;
   final String? mealType;
@@ -28,238 +78,466 @@ class FoodSearchScreen extends StatefulWidget {
 }
 
 class _FoodSearchScreenState extends State<FoodSearchScreen> {
+  final _controller = TextEditingController();
+  Timer? _debounce;
   String _query = '';
   String? _category;
+  List<FoodEntry> _online = const [];
+  _OnlineState _onlineState = _OnlineState.idle;
+  String? _onlineMessage;
+  int _requestId = 0;
+
+  OpenFoodFactsSource get _source => context.read<OpenFoodFactsSource>();
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onChanged(String value) {
+    setState(() => _query = value);
+    _debounce?.cancel();
+    final q = value.trim();
+    if (q.length < 3) {
+      _requestId++;
+      setState(() {
+        _online = const [];
+        _onlineState = _OnlineState.idle;
+      });
+      return;
+    }
+    setState(() => _onlineState = _OnlineState.loading);
+    _debounce = Timer(const Duration(milliseconds: 450), () => _fetchOnline(q));
+  }
+
+  Future<void> _fetchOnline(String q) async {
+    final id = ++_requestId;
+    try {
+      final results = await _source.search(q);
+      if (!mounted || id != _requestId) return;
+      setState(() {
+        _online = results;
+        _onlineState = _OnlineState.done;
+      });
+    } on FoodSourceException catch (e) {
+      if (!mounted || id != _requestId) return;
+      setState(() {
+        _online = const [];
+        _onlineState = e.offline ? _OnlineState.offline : _OnlineState.error;
+        _onlineMessage = e.message;
+      });
+    }
+  }
 
   Future<void> _select(FoodEntry entry) async {
-    final result = await ServingSheet.show(context, entry, mealType: widget.mealType ?? MealTypes.now(), pick: widget.pick);
+    final result = await Navigator.push<ServingResult>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FoodDetailsScreen(
+            entry: entry,
+            mealType: widget.mealType ?? MealTypes.now(),
+            pick: widget.pick),
+      ),
+    );
     if (result == null || !mounted) return;
     if (widget.pick) {
       Navigator.pop(context, result);
       return;
     }
-    final p = result.portion;
-    context.read<FoodLogCubit>().addManual(
-          name: entry.name,
-          calories: p.kcal,
-          protein: p.protein,
-          carbs: p.carbs,
-          fat: p.fat,
-          quantity: p.grams,
-          mealType: result.mealType,
-          fiber: p.fiber,
-          sugar: p.sugar,
-          sodium: p.sodium,
-        );
+    _log(result);
+  }
+
+  void _log(ServingResult result) => logServing(context, result);
+
+  Future<void> _scan() => scanAndLog(context, mealType: widget.mealType);
+
+  void _quickLog(FoodItem item) {
+    final meal = widget.mealType ?? MealTypes.now();
+    context.read<FoodLogCubit>().addFromTemplate(item, mealType: meal);
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text('Added ${entry.name} · ${p.kcal.round()} kcal')));
+      ..showSnackBar(SnackBar(
+          content: Text('Added ${item.name} · ${item.calories.round()} kcal')));
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final diet = context.watch<SettingsCubit>().state.diet;
-    final results = FoodDatabase.search(_query, category: _category, diet: diet);
+    final tracker = context.watch<TrackerCubit>().state;
+    final local = FoodDatabase.search(_query, category: _category, diet: diet);
+    final localNames = local.map((f) => f.name.toLowerCase()).toSet();
+    final online = _category != null
+        ? const <FoodEntry>[]
+        : _online
+            .where((f) => !localNames.contains(f.name.toLowerCase()))
+            .toList();
+    final searching = _query.trim().isNotEmpty;
 
     return Scaffold(
-      appBar: AppBar(title: Text(widget.pick ? 'Pick an ingredient' : 'Search food')),
+      appBar: AppBar(
+        title: Text(widget.pick ? 'Pick an ingredient' : 'Add food'),
+        actions: [
+          if (!widget.pick)
+            IconButton(
+              tooltip: 'Scan barcode',
+              icon: const Icon(Icons.qr_code_scanner_rounded),
+              onPressed: _scan,
+            ),
+        ],
+      ),
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
             child: TextField(
-              autofocus: true,
-              onChanged: (v) => setState(() => _query = v),
-              decoration: const InputDecoration(hintText: 'Search e.g. "chicken", "rice", "apple"', prefixIcon: Icon(Icons.search_rounded)),
+              controller: _controller,
+              autofocus: false,
+              textInputAction: TextInputAction.search,
+              onChanged: _onChanged,
+              decoration: InputDecoration(
+                hintText: 'Search foods, brands, meals',
+                prefixIcon: const Icon(Icons.search_rounded),
+                suffixIcon: _onlineState == _OnlineState.loading
+                    ? const Padding(
+                        padding: EdgeInsets.all(14),
+                        child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2.4)),
+                      )
+                    : (_query.isEmpty
+                        ? null
+                        : IconButton(
+                            tooltip: 'Clear',
+                            icon: const Icon(Icons.close_rounded),
+                            onPressed: () {
+                              _controller.clear();
+                              _onChanged('');
+                            },
+                          )),
+              ),
             ),
           ),
           SizedBox(
-            height: 40,
+            height: 44,
             child: ListView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               children: [
-                Padding(padding: const EdgeInsets.only(right: 8), child: ChoiceChip(label: const Text('All'), selected: _category == null, onSelected: (_) => setState(() => _category = null))),
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                      label: const Text('All'),
+                      selected: _category == null,
+                      onSelected: (_) => setState(() => _category = null)),
+                ),
                 for (final c in FoodDatabase.categories)
                   Padding(
                     padding: const EdgeInsets.only(right: 8),
-                    child: ChoiceChip(label: Text(c), selected: _category == c, onSelected: (_) => setState(() => _category = _category == c ? null : c)),
+                    child: ChoiceChip(
+                      label: Text(c),
+                      selected: _category == c,
+                      onSelected: (_) =>
+                          setState(() => _category = _category == c ? null : c),
+                    ),
                   ),
               ],
             ),
           ),
-          if (diet.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child: Row(children: [
-                Icon(Icons.filter_alt_rounded, size: 16, color: theme.colorScheme.primary),
-                const SizedBox(width: 6),
-                Expanded(child: Text('Filtering: ${FoodDatabase.diets.where((d) => diet.contains(d.key)).map((d) => d.label).join(', ')}', style: theme.textTheme.labelMedium)),
-              ]),
-            ),
           Expanded(
-            child: results.isEmpty
-                ? Center(child: Padding(padding: const EdgeInsets.all(32), child: Text('No foods found.\nTry another word, or add it manually.', textAlign: TextAlign.center, style: theme.textTheme.bodyMedium)))
-                : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                    itemCount: results.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemBuilder: (_, i) {
-                      final f = results[i];
-                      final serving = f.portion(f.servingG);
-                      return AppCard(
-                        onTap: () => _select(f),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(f.name, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
-                                  const SizedBox(height: 2),
-                                  Text('${f.servingLabel} · ${f.servingG.round()} g', style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-                                ],
-                              ),
-                            ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text('${serving.kcal.round()} kcal', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
-                                Text('P ${serving.protein.round()} · C ${serving.carbs.round()} · F ${serving.fat.round()}', style: theme.textTheme.labelSmall),
-                              ],
-                            ),
-                            const SizedBox(width: 6),
-                            Icon(widget.pick ? Icons.add_circle_outline_rounded : Icons.chevron_right_rounded),
-                          ],
+            child: ListView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+              children: [
+                if (diet.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(children: [
+                      Icon(Icons.filter_alt_rounded,
+                          size: 16, color: theme.colorScheme.primary),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Diet filter: ${FoodDatabase.diets.where((d) => diet.contains(d.key)).map((d) => d.label).join(', ')} (online results are not filtered)',
+                          style: theme.textTheme.labelMedium,
                         ),
-                      );
+                      ),
+                    ]),
+                  ),
+                if (!searching && _category == null && !widget.pick) ...[
+                  if (tracker.favorites.isNotEmpty)
+                    ..._quickSection(
+                        'Favorites', Icons.star_rounded, tracker.favorites),
+                  if (tracker.recents.isNotEmpty)
+                    ..._quickSection('Recent', Icons.history_rounded,
+                        tracker.recents.take(6).toList()),
+                ],
+                if (local.isNotEmpty) ...[
+                  _SectionLabel(searching || _category != null
+                      ? 'Foods'
+                      : 'Browse foods'),
+                  for (final f in local.take(searching ? 40 : 60))
+                    _FoodTile(
+                        entry: f, pick: widget.pick, onTap: () => _select(f)),
+                ],
+                if (online.isNotEmpty) ...[
+                  const _SectionLabel('From the online database'),
+                  for (final f in online)
+                    _FoodTile(
+                        entry: f, pick: widget.pick, onTap: () => _select(f)),
+                ],
+                if (_onlineState == _OnlineState.loading &&
+                    online.isEmpty &&
+                    searching &&
+                    _query.trim().length >= 3)
+                  const _LoadingRows(),
+                if (_onlineState == _OnlineState.offline ||
+                    _onlineState == _OnlineState.error)
+                  _StatusCard(
+                    icon: _onlineState == _OnlineState.offline
+                        ? Icons.wifi_off_rounded
+                        : Icons.cloud_off_rounded,
+                    title: _onlineState == _OnlineState.offline
+                        ? 'Offline'
+                        : 'Online search unavailable',
+                    message:
+                        '${_onlineMessage ?? ''} Showing built-in foods only.',
+                    onRetry: () {
+                      setState(() => _onlineState = _OnlineState.loading);
+                      _fetchOnline(_query.trim());
                     },
                   ),
+                if (searching &&
+                    local.isEmpty &&
+                    online.isEmpty &&
+                    _onlineState != _OnlineState.loading &&
+                    _onlineState != _OnlineState.offline &&
+                    _onlineState != _OnlineState.error)
+                  const _EmptyResults(),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
+
+  List<Widget> _quickSection(
+          String title, IconData icon, List<FoodItem> items) =>
+      [
+        _SectionLabel(title),
+        SizedBox(
+          height: 44,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: items.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            itemBuilder: (_, i) => ActionChip(
+              avatar: Icon(icon, size: 16),
+              label: Text('${items[i].name} · ${items[i].calories.round()}'),
+              onPressed: () => _quickLog(items[i]),
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+      ];
 }
 
-/// Choose how much of a food: servings or exact grams, with live nutrition.
-class ServingSheet extends StatefulWidget {
-  final FoodEntry entry;
-  final String mealType;
-  final bool pick;
-  const ServingSheet({super.key, required this.entry, required this.mealType, required this.pick});
-
-  static Future<ServingResult?> show(BuildContext context, FoodEntry entry, {required String mealType, bool pick = false}) {
-    return showModalBottomSheet<ServingResult>(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => ServingSheet(entry: entry, mealType: mealType, pick: pick),
-    );
-  }
-
-  @override
-  State<ServingSheet> createState() => _ServingSheetState();
-}
-
-class _ServingSheetState extends State<ServingSheet> {
-  late double _servings = 1;
-  late final _grams = TextEditingController(text: widget.entry.servingG.round().toString());
-  late String _mealType = widget.mealType;
-
-  @override
-  void dispose() {
-    _grams.dispose();
-    super.dispose();
-  }
-
-  double get _g => double.tryParse(_grams.text.trim()) ?? 0;
-
-  void _setServings(double s) {
-    if (s < 0.25) return;
-    setState(() {
-      _servings = s;
-      _grams.text = (widget.entry.servingG * s).round().toString();
-    });
-  }
+class _SectionLabel extends StatelessWidget {
+  final String text;
+  const _SectionLabel(this.text);
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final e = widget.entry;
-    final p = e.portion(_g);
-
-    Widget nutrient(String label, String value, Color color) => Expanded(
-          child: Column(children: [
-            Text(value, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800, color: color)),
-            Text(label, style: theme.textTheme.labelSmall),
-          ]),
-        );
-
     return Padding(
-      padding: EdgeInsets.fromLTRB(20, 4, 20, 20 + MediaQuery.of(context).viewInsets.bottom),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(e.name, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
-            Text('1 serving = ${e.servingLabel} (${e.servingG.round()} g)', style: theme.textTheme.bodySmall),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                IconButton.outlined(onPressed: () => _setServings(_servings - 0.5), icon: const Icon(Icons.remove_rounded)),
-                Expanded(child: Center(child: Text('${_servings == _servings.roundToDouble() ? _servings.toInt() : _servings} serving${_servings == 1 ? '' : 's'}', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)))),
-                IconButton.outlined(onPressed: () => _setServings(_servings + 0.5), icon: const Icon(Icons.add_rounded)),
-              ],
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _grams,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(labelText: 'Amount (grams)', suffixText: 'g'),
-              onChanged: (v) => setState(() => _servings = (double.tryParse(v) ?? 0) / e.servingG),
-            ),
-            const SizedBox(height: 16),
-            AppCard(
-              color: theme.colorScheme.primary.withValues(alpha: 0.06),
-              child: Column(children: [
-                Text('${p.kcal.round()} kcal', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800)),
-                const SizedBox(height: 10),
-                Row(children: [
-                  nutrient('Protein', '${p.protein.toStringAsFixed(1)} g', MacroColors.protein),
-                  nutrient('Carbs', '${p.carbs.toStringAsFixed(1)} g', MacroColors.carbs),
-                  nutrient('Fat', '${p.fat.toStringAsFixed(1)} g', MacroColors.fat),
-                ]),
-                const Divider(height: 20),
-                Row(children: [
-                  nutrient('Fiber', '${p.fiber.toStringAsFixed(1)} g', theme.colorScheme.onSurface),
-                  nutrient('Sugar', '${p.sugar.toStringAsFixed(1)} g', theme.colorScheme.onSurface),
-                  nutrient('Sodium', '${p.sodium.round()} mg', theme.colorScheme.onSurface),
-                ]),
-              ]),
-            ),
-            if (!widget.pick) ...[
-              const SizedBox(height: 14),
-              Wrap(
-                spacing: 8,
+      padding: const EdgeInsets.only(top: 14, bottom: 8),
+      child: Text(text,
+          style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: theme.colorScheme.onSurfaceVariant)),
+    );
+  }
+}
+
+class _FoodTile extends StatelessWidget {
+  final FoodEntry entry;
+  final bool pick;
+  final VoidCallback onTap;
+  const _FoodTile(
+      {required this.entry, required this.pick, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final serving = entry.portion(entry.servingG);
+    final subtitle = [
+      if (entry.brand != null) entry.brand!,
+      entry.servingLabel,
+      if (entry.servingLabel != '100 g') '${entry.servingG.round()} g'
+    ].join(' · ');
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Semantics(
+        button: true,
+        label:
+            '${entry.name}, ${serving.kcal.round()} calories per ${entry.servingLabel}',
+        child: AppCard(
+          onTap: onTap,
+          padding: const EdgeInsets.all(10),
+          child: Row(
+            children: [
+              FoodThumb(
+                  imageUrl: entry.imageUrl,
+                  icon: FoodThumb.iconForCategory(entry.category)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(entry.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleSmall
+                            ?.copyWith(fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 2),
+                    Text(subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant)),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  for (final m in MealTypes.all)
-                    ChoiceChip(avatar: Icon(m.icon, size: 16), label: Text(m.label), selected: _mealType == m.key, onSelected: (_) => setState(() => _mealType = m.key)),
+                  Text('${serving.kcal.round()}',
+                      style: theme.textTheme.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w800)),
+                  Text('kcal',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant)),
                 ],
               ),
+              Icon(
+                  pick
+                      ? Icons.add_circle_outline_rounded
+                      : Icons.chevron_right_rounded,
+                  color: theme.colorScheme.onSurfaceVariant),
             ],
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: _g > 0 ? () => Navigator.pop(context, ServingResult(e, _g, _mealType)) : null,
-                child: Text(widget.pick ? 'Add ingredient' : 'Add to diary'),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LoadingRows extends StatelessWidget {
+  const _LoadingRows();
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.surfaceContainerHighest;
+    Widget bar(double w) => Container(
+        width: w,
+        height: 12,
+        decoration: BoxDecoration(
+            color: color, borderRadius: BorderRadius.circular(6)));
+    return Column(
+      children: [
+        for (var i = 0; i < 3; i++)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: AppCard(
+              padding: const EdgeInsets.all(10),
+              child: Row(children: [
+                Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                        color: color,
+                        borderRadius: BorderRadius.circular(Radii.md - 2))),
+                const SizedBox(width: 12),
+                Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [bar(160), const SizedBox(height: 8), bar(100)]),
+              ]),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _StatusCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String message;
+  final VoidCallback onRetry;
+  const _StatusCard(
+      {required this.icon,
+      required this.title,
+      required this.message,
+      required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: AppCard(
+        color: theme.colorScheme.surfaceContainerLow,
+        child: Row(
+          children: [
+            Icon(icon, color: theme.colorScheme.onSurfaceVariant),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: theme.textTheme.titleSmall
+                          ?.copyWith(fontWeight: FontWeight.w700)),
+                  Text(message, style: theme.textTheme.bodySmall),
+                ],
               ),
             ),
+            TextButton(onPressed: onRetry, child: const Text('Retry')),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _EmptyResults extends StatelessWidget {
+  const _EmptyResults();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        children: [
+          Icon(Icons.search_off_rounded,
+              size: 40, color: theme.colorScheme.onSurfaceVariant),
+          const SizedBox(height: 12),
+          Text('No foods found',
+              style: theme.textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w700)),
+          const SizedBox(height: 4),
+          Text(
+              'Try another word, scan the barcode, or add it manually from the diary.',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium
+                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+        ],
       ),
     );
   }
@@ -272,16 +550,26 @@ class SearchFoodBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return AppCard(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FoodSearchScreen())),
-      child: Row(
-        children: [
-          Icon(Icons.search_rounded, color: theme.colorScheme.onSurfaceVariant),
-          const SizedBox(width: 12),
-          Expanded(child: Text('Search food by name', style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onSurfaceVariant))),
-          Icon(Icons.tune_rounded, size: 20, color: theme.colorScheme.onSurfaceVariant),
-        ],
+    return Semantics(
+      button: true,
+      label: 'Search food',
+      child: AppCard(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        onTap: () => Navigator.push(context,
+            MaterialPageRoute(builder: (_) => const FoodSearchScreen())),
+        child: Row(
+          children: [
+            Icon(Icons.search_rounded,
+                color: theme.colorScheme.onSurfaceVariant),
+            const SizedBox(width: 12),
+            Expanded(
+                child: Text('Search food by name',
+                    style: theme.textTheme.bodyLarge
+                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant))),
+            Icon(Icons.qr_code_scanner_rounded,
+                size: 22, color: theme.colorScheme.primary),
+          ],
+        ),
       ),
     );
   }

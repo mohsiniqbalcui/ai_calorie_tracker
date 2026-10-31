@@ -15,11 +15,15 @@ class EditMealScreen extends StatefulWidget {
 class _EditMealScreenState extends State<EditMealScreen> {
   late final FoodItem _base = widget.meal;
   late final _name = TextEditingController(text: _base.name);
-  late final _kcal = TextEditingController(text: _base.calories.toStringAsFixed(0));
-  late final _protein = TextEditingController(text: _base.protein.toStringAsFixed(1));
-  late final _carbs = TextEditingController(text: _base.carbs.toStringAsFixed(1));
+  late final _kcal =
+      TextEditingController(text: _base.calories.toStringAsFixed(0));
+  late final _protein =
+      TextEditingController(text: _base.protein.toStringAsFixed(1));
+  late final _carbs =
+      TextEditingController(text: _base.carbs.toStringAsFixed(1));
   late final _fat = TextEditingController(text: _base.fat.toStringAsFixed(1));
-  late final _qty = TextEditingController(text: _base.quantity.toStringAsFixed(0));
+  late final _qty =
+      TextEditingController(text: _base.quantity.toStringAsFixed(0));
   late final _note = TextEditingController(text: _base.note ?? '');
   late String _mealType = _base.mealType;
   double _servings = 1;
@@ -43,7 +47,8 @@ class _EditMealScreenState extends State<EditMealScreen> {
     });
   }
 
-  double _n(TextEditingController c, double fallback) => double.tryParse(c.text.trim()) ?? fallback;
+  double _n(TextEditingController c, double fallback) =>
+      double.tryParse(c.text.trim()) ?? fallback;
 
   void _save() {
     final name = _name.text.trim();
@@ -75,38 +80,69 @@ class _EditMealScreenState extends State<EditMealScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Edit meal'),
-        actions: [Padding(padding: const EdgeInsets.only(right: 8), child: FilledButton(onPressed: _save, child: const Text('Save')))],
+        actions: [
+          Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: FilledButton(onPressed: _save, child: const Text('Save')))
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          TextField(controller: _name, decoration: const InputDecoration(labelText: 'Meal name')),
+          TextField(
+              controller: _name,
+              decoration: const InputDecoration(labelText: 'Meal name')),
           const SizedBox(height: 16),
-          Text('Servings', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+          Text('Servings',
+              style: theme.textTheme.titleSmall
+                  ?.copyWith(fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
             children: [
               for (final s in [0.5, 1.0, 1.5, 2.0, 3.0])
-                ChoiceChip(label: Text('${s == s.roundToDouble() ? s.toInt() : s}×'), selected: _servings == s, onSelected: (_) => _applyServings(s)),
+                ChoiceChip(
+                    label: Text('${s == s.roundToDouble() ? s.toInt() : s}×'),
+                    selected: _servings == s,
+                    onSelected: (_) => _applyServings(s)),
             ],
           ),
           const SizedBox(height: 16),
-          Row(children: [_num(_kcal, 'Calories (kcal)'), const SizedBox(width: 10), _num(_qty, 'Quantity (g)')]),
+          Row(children: [
+            _num(_kcal, 'Calories (kcal)'),
+            const SizedBox(width: 10),
+            _num(_qty, 'Quantity (g)')
+          ]),
           const SizedBox(height: 10),
-          Row(children: [_num(_protein, 'Protein g'), const SizedBox(width: 10), _num(_carbs, 'Carbs g'), const SizedBox(width: 10), _num(_fat, 'Fat g')]),
+          Row(children: [
+            _num(_protein, 'Protein g'),
+            const SizedBox(width: 10),
+            _num(_carbs, 'Carbs g'),
+            const SizedBox(width: 10),
+            _num(_fat, 'Fat g')
+          ]),
           const SizedBox(height: 16),
-          Text('Meal', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+          Text('Meal',
+              style: theme.textTheme.titleSmall
+                  ?.copyWith(fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
             children: [
               for (final m in MealTypes.all)
-                ChoiceChip(avatar: Icon(m.icon, size: 16), label: Text(m.label), selected: _mealType == m.key, onSelected: (_) => setState(() => _mealType = m.key)),
+                ChoiceChip(
+                    avatar: Icon(m.icon, size: 16),
+                    label: Text(m.label),
+                    selected: _mealType == m.key,
+                    onSelected: (_) => setState(() => _mealType = m.key)),
             ],
           ),
           const SizedBox(height: 16),
-          TextField(controller: _note, maxLines: 3, decoration: const InputDecoration(labelText: 'Notes (optional)', alignLabelWithHint: true)),
+          TextField(
+              controller: _note,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                  labelText: 'Notes (optional)', alignLabelWithHint: true)),
         ],
       ),
     );

@@ -69,7 +69,8 @@ class SettingsCubit extends Cubit<AppSettings> {
       waterGoalMl: _prefs.getInt('water_goal_ml') ??
           (user == null
               ? 2500
-              : CalorieCalculator.calculateWaterIntake(weight: user.weight, activityLevel: user.activityLevel)),
+              : CalorieCalculator.calculateWaterIntake(
+                  weight: user.weight, activityLevel: user.activityLevel)),
       user: user,
       diet: (_prefs.getStringList('diet_prefs') ?? const []).toSet(),
     ));
@@ -82,7 +83,8 @@ class SettingsCubit extends Cubit<AppSettings> {
     await _prefs.setString('ui_mode', mode.name);
   }
 
-  Future<void> toggleUiMode() => setUiMode(state.isPro ? UiMode.simple : UiMode.pro);
+  Future<void> toggleUiMode() =>
+      setUiMode(state.isPro ? UiMode.simple : UiMode.pro);
 
   Future<void> setThemeMode(ThemeMode mode) async {
     emit(state.copyWith(themeMode: mode));
@@ -123,8 +125,10 @@ class SettingsCubit extends Cubit<AppSettings> {
       activityLevel: activityLevel,
       gender: gender,
     );
-    final calories = CalorieCalculator.calculateCaloriesBasedOnGoal(maintenanceCalories: maintenance, goal: goal);
-    final macros = CalorieCalculator.calculateMacroGoals(calories: calories, goal: goal);
+    final calories = CalorieCalculator.calculateCaloriesBasedOnGoal(
+        maintenanceCalories: maintenance, goal: goal);
+    final macros =
+        CalorieCalculator.calculateMacroGoals(calories: calories, goal: goal);
     final user = UserData(
       weight: weight,
       height: height,
@@ -146,7 +150,8 @@ class SettingsCubit extends Cubit<AppSettings> {
   Future<void> setCalorieGoal(int calories) async {
     final user = state.user;
     if (user == null) return;
-    final macros = CalorieCalculator.calculateMacroGoals(calories: calories, goal: user.goal);
+    final macros = CalorieCalculator.calculateMacroGoals(
+        calories: calories, goal: user.goal);
     final updated = user.copyWith(
       estimatedCalories: calories,
       proteinGoal: macros['proteinGoal'],
@@ -157,10 +162,12 @@ class SettingsCubit extends Cubit<AppSettings> {
     emit(state.copyWith(user: updated));
   }
 
-  Future<void> setMacroGoals({required int protein, required int carbs, required int fat}) async {
+  Future<void> setMacroGoals(
+      {required int protein, required int carbs, required int fat}) async {
     final user = state.user;
     if (user == null) return;
-    final updated = user.copyWith(proteinGoal: protein, carbsGoal: carbs, fatGoal: fat);
+    final updated =
+        user.copyWith(proteinGoal: protein, carbsGoal: carbs, fatGoal: fat);
     await _prefManager.saveUserData(updated);
     emit(state.copyWith(user: updated));
   }

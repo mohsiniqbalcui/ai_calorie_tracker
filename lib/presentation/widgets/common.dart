@@ -27,7 +27,8 @@ class AppCard extends StatelessWidget {
     return Card(
       color: color,
       clipBehavior: Clip.antiAlias,
-      child: InkWell(onTap: onTap, child: Padding(padding: padding, child: child)),
+      child:
+          InkWell(onTap: onTap, child: Padding(padding: padding, child: child)),
     );
   }
 }
@@ -44,7 +45,11 @@ class SectionTitle extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(text, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+            child: Text(text,
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w700)),
           ),
           if (trailing != null) trailing!,
         ],
@@ -59,7 +64,12 @@ class MacroBar extends StatelessWidget {
   final double goal;
   final Color color;
 
-  const MacroBar({super.key, required this.label, required this.value, required this.goal, required this.color});
+  const MacroBar(
+      {super.key,
+      required this.label,
+      required this.value,
+      required this.goal,
+      required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -70,9 +80,15 @@ class MacroBar extends StatelessWidget {
       children: [
         Row(
           children: [
-            Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+            Container(
+                width: 8,
+                height: 8,
+                decoration:
+                    BoxDecoration(color: color, shape: BoxShape.circle)),
             const SizedBox(width: 6),
-            Text(label, style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+            Text(label,
+                style: theme.textTheme.labelMedium
+                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
           ],
         ),
         const SizedBox(height: 6),
@@ -87,7 +103,8 @@ class MacroBar extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text('${value.round()} / ${goal.round()} g',
-            style: theme.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w700)),
+            style: theme.textTheme.labelSmall
+                ?.copyWith(fontWeight: FontWeight.w700)),
       ],
     );
   }
@@ -99,7 +116,12 @@ class CalorieRing extends StatelessWidget {
   final int goal;
   final double radius;
 
-  const CalorieRing({super.key, required this.consumed, required this.goal, this.burned = 0, this.radius = 78});
+  const CalorieRing(
+      {super.key,
+      required this.consumed,
+      required this.goal,
+      this.burned = 0,
+      this.radius = 78});
 
   @override
   Widget build(BuildContext context) {
@@ -122,10 +144,12 @@ class CalorieRing extends StatelessWidget {
         children: [
           Text(
             '${remaining.abs().round()}',
-            style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800, color: over ? color : null),
+            style: theme.textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.w800, color: over ? color : null),
           ),
           Text(over ? 'kcal over' : 'kcal left',
-              style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+              style: theme.textTheme.labelMedium
+                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
         ],
       ),
     );
@@ -143,7 +167,8 @@ class ModeToggleButton extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.only(right: 8),
         child: ActionChip(
-          avatar: Icon(isPro ? Icons.insights_rounded : Icons.spa_rounded, size: 18),
+          avatar: Icon(isPro ? Icons.insights_rounded : Icons.spa_rounded,
+              size: 18),
           label: Text(isPro ? 'Pro' : 'Simple'),
           onPressed: () {
             context.read<SettingsCubit>().toggleUiMode();
@@ -151,7 +176,9 @@ class ModeToggleButton extends StatelessWidget {
               ..hideCurrentSnackBar()
               ..showSnackBar(SnackBar(
                 duration: const Duration(seconds: 2),
-                content: Text(isPro ? 'Simple mode: clean and focused' : 'Pro mode: full analytics and tools'),
+                content: Text(isPro
+                    ? 'Simple mode: clean and focused'
+                    : 'Pro mode: full analytics and tools'),
               ));
           },
         ),
@@ -184,7 +211,8 @@ class DateNavigator extends StatelessWidget {
     return Row(
       children: [
         IconButton.filledTonal(
-          onPressed: () => selectDay(context, date.subtract(const Duration(days: 1))),
+          onPressed: () =>
+              selectDay(context, date.subtract(const Duration(days: 1))),
           icon: const Icon(Icons.chevron_left_rounded),
         ),
         Expanded(
@@ -195,15 +223,21 @@ class DateNavigator extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 6),
               child: Column(
                 children: [
-                  Text(DateFmt.relative(date), style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
-                  Text(DateFmt.short(date), style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                  Text(DateFmt.relative(date),
+                      style: theme.textTheme.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w800)),
+                  Text(DateFmt.short(date),
+                      style: theme.textTheme.labelMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant)),
                 ],
               ),
             ),
           ),
         ),
         IconButton.filledTonal(
-          onPressed: isToday ? null : () => selectDay(context, date.add(const Duration(days: 1))),
+          onPressed: isToday
+              ? null
+              : () => selectDay(context, date.add(const Duration(days: 1))),
           icon: const Icon(Icons.chevron_right_rounded),
         ),
       ],
@@ -234,14 +268,17 @@ class WaterCard extends StatelessWidget {
           controller: controller,
           autofocus: true,
           keyboardType: TextInputType.number,
-          decoration: InputDecoration(labelText: metric ? 'Amount (ml)' : 'Amount (fl oz)'),
+          decoration: InputDecoration(
+              labelText: metric ? 'Amount (ml)' : 'Amount (fl oz)'),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           FilledButton(
             onPressed: () {
               final v = double.tryParse(controller.text);
-              Navigator.pop(ctx, v == null ? null : (metric ? v : v * 29.5735).round());
+              Navigator.pop(
+                  ctx, v == null ? null : (metric ? v : v * 29.5735).round());
             },
             child: const Text('Add'),
           ),
@@ -260,7 +297,8 @@ class WaterCard extends StatelessWidget {
     final cubit = context.read<TrackerCubit>();
     final pct = goal > 0 ? (water / goal).clamp(0.0, 1.0) : 0.0;
     final step = metric ? 250 : 237;
-    final amount = '${Units.volume(water, metric)} / ${Units.volume(goal, metric)}';
+    final amount =
+        '${Units.volume(water, metric)} / ${Units.volume(goal, metric)}';
 
     return AppCard(
       child: Column(
@@ -270,16 +308,24 @@ class WaterCard extends StatelessWidget {
             children: [
               const Icon(Icons.water_drop_rounded, color: MacroColors.water),
               const SizedBox(width: 8),
-              Text('Water', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+              Text('Water',
+                  style: theme.textTheme.titleSmall
+                      ?.copyWith(fontWeight: FontWeight.w700)),
               if (!compact) ...[
                 const Spacer(),
-                Text(amount, style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700)),
+                Text(amount,
+                    style: theme.textTheme.labelLarge
+                        ?.copyWith(fontWeight: FontWeight.w700)),
               ],
             ],
           ),
           if (compact) ...[
             const SizedBox(height: 6),
-            Text(amount, style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
+            Text(amount,
+                style: theme.textTheme.labelMedium
+                    ?.copyWith(fontWeight: FontWeight.w700),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis),
           ],
           const SizedBox(height: 10),
           ClipRRect(
@@ -295,7 +341,9 @@ class WaterCard extends StatelessWidget {
           if (!compact)
             Row(
               children: [
-                IconButton.outlined(onPressed: () => cubit.addWater(-step), icon: const Icon(Icons.remove_rounded)),
+                IconButton.outlined(
+                    onPressed: () => cubit.addWater(-step),
+                    icon: const Icon(Icons.remove_rounded)),
                 const SizedBox(width: 8),
                 Expanded(
                   child: FilledButton.tonalIcon(
@@ -305,7 +353,9 @@ class WaterCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                IconButton.outlined(onPressed: () => _custom(context), icon: const Icon(Icons.edit_rounded)),
+                IconButton.outlined(
+                    onPressed: () => _custom(context),
+                    icon: const Icon(Icons.edit_rounded)),
               ],
             ),
         ],

@@ -20,7 +20,8 @@ class _FastingScreenState extends State<FastingScreen> {
   @override
   void initState() {
     super.initState();
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) => mounted ? setState(() {}) : null);
+    _timer = Timer.periodic(
+        const Duration(seconds: 1), (_) => mounted ? setState(() {}) : null);
   }
 
   @override
@@ -40,7 +41,9 @@ class _FastingScreenState extends State<FastingScreen> {
     final t = context.watch<TrackerCubit>().state;
     final cubit = context.read<TrackerCubit>();
     final goal = Duration(hours: t.fastGoalHours);
-    final elapsed = t.fastStart == null ? Duration.zero : DateTime.now().difference(t.fastStart!);
+    final elapsed = t.fastStart == null
+        ? Duration.zero
+        : DateTime.now().difference(t.fastStart!);
     final done = elapsed >= goal;
 
     return Scaffold(
@@ -56,14 +59,32 @@ class _FastingScreenState extends State<FastingScreen> {
                   radius: 100,
                   lineWidth: 14,
                   circularStrokeCap: CircularStrokeCap.round,
-                  percent: t.isFasting ? (elapsed.inSeconds / goal.inSeconds).clamp(0.0, 1.0) : 0,
-                  progressColor: done ? Colors.green : theme.colorScheme.primary,
-                  backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
+                  percent: t.isFasting
+                      ? (elapsed.inSeconds / goal.inSeconds).clamp(0.0, 1.0)
+                      : 0,
+                  progressColor:
+                      done ? Colors.green : theme.colorScheme.primary,
+                  backgroundColor:
+                      theme.colorScheme.primary.withValues(alpha: 0.12),
                   center: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(t.isFasting ? _fmt(elapsed) : '${t.fastGoalHours}:00:00', style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800, fontFeatures: const [FontFeature.tabularFigures()])),
-                      Text(!t.isFasting ? 'ready to start' : (done ? 'goal reached 🎉' : '${_fmt(goal - elapsed)} to go'), style: theme.textTheme.labelMedium),
+                      Text(
+                          t.isFasting
+                              ? _fmt(elapsed)
+                              : '${t.fastGoalHours}:00:00',
+                          style: theme.textTheme.headlineMedium?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              fontFeatures: const [
+                                FontFeature.tabularFigures()
+                              ])),
+                      Text(
+                          !t.isFasting
+                              ? 'ready to start'
+                              : (done
+                                  ? 'goal reached 🎉'
+                                  : '${_fmt(goal - elapsed)} to go'),
+                          style: theme.textTheme.labelMedium),
                     ],
                   ),
                 ),
@@ -72,32 +93,55 @@ class _FastingScreenState extends State<FastingScreen> {
                   spacing: 8,
                   children: [
                     for (final h in [12, 14, 16, 18, 20])
-                      ChoiceChip(label: Text('$h:${24 - h}'), selected: t.fastGoalHours == h, onSelected: t.isFasting ? null : (_) => cubit.setFastGoal(h)),
+                      ChoiceChip(
+                          label: Text('$h:${24 - h}'),
+                          selected: t.fastGoalHours == h,
+                          onSelected:
+                              t.isFasting ? null : (_) => cubit.setFastGoal(h)),
                   ],
                 ),
                 const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
                   child: t.isFasting
-                      ? FilledButton.tonalIcon(onPressed: cubit.endFast, icon: const Icon(Icons.stop_rounded), label: const Text('End fast'))
-                      : FilledButton.icon(onPressed: cubit.startFast, icon: const Icon(Icons.play_arrow_rounded), label: const Text('Start fast')),
+                      ? FilledButton.tonalIcon(
+                          onPressed: cubit.endFast,
+                          icon: const Icon(Icons.stop_rounded),
+                          label: const Text('End fast'))
+                      : FilledButton.icon(
+                          onPressed: cubit.startFast,
+                          icon: const Icon(Icons.play_arrow_rounded),
+                          label: const Text('Start fast')),
                 ),
               ],
             ),
           ),
           const SectionTitle('History'),
-          if (t.fastHistory.isEmpty) const Padding(padding: EdgeInsets.all(24), child: Center(child: Text('Completed fasts will show up here.'))),
+          if (t.fastHistory.isEmpty)
+            const Padding(
+                padding: EdgeInsets.all(24),
+                child:
+                    Center(child: Text('Completed fasts will show up here.'))),
           for (final f in t.fastHistory)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: AppCard(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: Row(
                   children: [
-                    Icon(f.completed ? Icons.check_circle_rounded : Icons.timelapse_rounded, color: f.completed ? Colors.green : Colors.orange),
+                    Icon(
+                        f.completed
+                            ? Icons.check_circle_rounded
+                            : Icons.timelapse_rounded,
+                        color: f.completed ? Colors.green : Colors.orange),
                     const SizedBox(width: 12),
-                    Expanded(child: Text('${f.duration.inHours}h ${f.duration.inMinutes % 60}m  of  ${f.goalHours}h', style: theme.textTheme.titleSmall)),
-                    Text(DateFmt.short(f.start), style: theme.textTheme.labelMedium),
+                    Expanded(
+                        child: Text(
+                            '${f.duration.inHours}h ${f.duration.inMinutes % 60}m  of  ${f.goalHours}h',
+                            style: theme.textTheme.titleSmall)),
+                    Text(DateFmt.short(f.start),
+                        style: theme.textTheme.labelMedium),
                   ],
                 ),
               ),

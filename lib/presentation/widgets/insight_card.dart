@@ -32,7 +32,9 @@ class InsightCard extends StatelessWidget {
         children: [
           Icon(insight.icon, color: color),
           const SizedBox(width: 12),
-          Expanded(child: Text(insight.text, style: Theme.of(context).textTheme.bodyMedium)),
+          Expanded(
+              child: Text(insight.text,
+                  style: Theme.of(context).textTheme.bodyMedium)),
         ],
       ),
     );
@@ -46,7 +48,8 @@ class StreakChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final streak = context.select((FoodLogCubit c) => c.state.streak);
     return Chip(
-      avatar: Icon(Icons.local_fire_department_rounded, size: 18, color: streak > 0 ? Colors.deepOrange : null),
+      avatar: Icon(Icons.local_fire_department_rounded,
+          size: 18, color: streak > 0 ? Colors.deepOrange : null),
       label: Text(streak == 1 ? '1 day streak' : '$streak day streak'),
     );
   }
@@ -59,7 +62,8 @@ class StatusBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<FoodLogCubit>().state;
-    if (state.error == null && state.successMessage == null) return const SizedBox.shrink();
+    if (state.error == null && state.successMessage == null)
+      return const SizedBox.shrink();
     final isError = state.error != null;
     final theme = Theme.of(context);
     final color = isError ? theme.colorScheme.error : const Color(0xFF22A06B);
@@ -70,10 +74,13 @@ class StatusBanner extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(14, 8, 4, 8),
         child: Row(
           children: [
-            Icon(isError ? Icons.error_rounded : Icons.check_circle_rounded, color: color),
+            Icon(isError ? Icons.error_rounded : Icons.check_circle_rounded,
+                color: color),
             const SizedBox(width: 10),
             Expanded(child: Text(state.error ?? state.successMessage ?? '')),
-            IconButton(onPressed: () => context.read<FoodLogCubit>().clearMessages(), icon: const Icon(Icons.close_rounded)),
+            IconButton(
+                onPressed: () => context.read<FoodLogCubit>().clearMessages(),
+                icon: const Icon(Icons.close_rounded)),
           ],
         ),
       ),

@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -18,64 +17,51 @@ import 'text_input_dialog.dart';
 /// The one entry point for adding food in either UI mode.
 class AddFoodFlow {
   static Future<void> show(BuildContext context, {String? mealType}) async {
-    if (!await _ensurePermissions(context) || !context.mounted) return;
     final foodCubit = context.read<FoodLogCubit>();
     final tracker = context.read<TrackerCubit>()..refreshRecents();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       builder: (_) => MultiBlocProvider(
-        providers: [BlocProvider.value(value: foodCubit), BlocProvider.value(value: tracker)],
-        child: _AddFoodSheet(parentContext: context, initialMealType: mealType ?? MealTypes.now()),
+        providers: [
+          BlocProvider.value(value: foodCubit),
+          BlocProvider.value(value: tracker)
+        ],
+        child: _AddFoodSheet(
+            parentContext: context,
+            initialMealType: mealType ?? MealTypes.now()),
       ),
     );
   }
 
-  static Future<bool> _ensurePermissions(BuildContext context) async {
+  /// Asks for a single permission only when the user picks the feature that
+  /// needs it, so search and manual entry never wait on camera access.
+  static Future<bool> ensure(
+      BuildContext context, Permission permission, String label) async {
     if (kIsWeb) return true;
-
-    bool needsStoragePermission = false;
-    if (Platform.isAndroid) {
-      final androidInfo = await DeviceInfoPlugin().androidInfo;
-      needsStoragePermission = androidInfo.version.sdkInt < 33;
+    var status = await permission.status;
+    if (!status.isGranted) status = await permission.request();
+    if (status.isGranted || status.isLimited) return true;
+    if (context.mounted) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(
+          content:
+              Text('$label access is off. Enable it in Settings to use this.'),
+          duration: const Duration(seconds: 4),
+          action: SnackBarAction(
+              label: 'Open Settings', onPressed: openAppSettings),
+        ));
     }
-
-    final permissionsToRequest = [
-      Permission.camera,
-      Permission.microphone,
-      if (needsStoragePermission) Permission.storage,
-    ];
-
-    final current = <Permission, PermissionStatus>{
-      for (final p in permissionsToRequest) p: await p.status,
-    };
-    if (current.values.every((s) => s.isGranted)) return true;
-
-    final statuses = await permissionsToRequest.request();
-    final cameraGranted = statuses[Permission.camera]?.isGranted == true;
-    final microphoneGranted = statuses[Permission.microphone]?.isGranted == true;
-
-    if (!cameraGranted || !microphoneGranted) {
-      final missing = [if (!cameraGranted) 'Camera', if (!microphoneGranted) 'Microphone'];
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Please grant ${missing.join(' and ')} permissions in Settings.'),
-            duration: const Duration(seconds: 4),
-            action: SnackBarAction(label: 'Open Settings', onPressed: openAppSettings),
-          ),
-        );
-      }
-      return false;
-    }
-    return true;
+    return false;
   }
 }
 
 class _AddFoodSheet extends StatefulWidget {
   final BuildContext parentContext;
   final String initialMealType;
-  const _AddFoodSheet({required this.parentContext, required this.initialMealType});
+  const _AddFoodSheet(
+      {required this.parentContext, required this.initialMealType});
 
   @override
   State<_AddFoodSheet> createState() => _AddFoodSheetState();
@@ -87,6 +73,10 @@ class _AddFoodSheetState extends State<_AddFoodSheet> {
   Future<void> _pick(ImageSource source) async {
     final cubit = context.read<FoodLogCubit>();
     final meal = _mealType;
+    final parent = widget.parentContext;
+    if (source == ImageSource.camera &&
+        !await AddFoodFlow.ensure(parent, Permission.camera, 'Camera')) return;
+    if (!mounted) return;
     Navigator.pop(context);
     final file = await ImagePicker().pickImage(source: source, maxWidth: 600);
     if (file != null) cubit.addMealFromImage(File(file.path), mealType: meal);
@@ -107,14 +97,18 @@ class _AddFoodSheetState extends State<_AddFoodSheet> {
     );
   }
 
-  void _voice() {
+  Future<void> _voice() async {
     final cubit = context.read<FoodLogCubit>();
     final meal = _mealType;
     final parent = widget.parentContext;
+    if (!await AddFoodFlow.ensure(parent, Permission.microphone, 'Microphone'))
+      return;
+    if (!mounted) return;
     Navigator.pop(context);
     showDialog(
       context: parent,
-      builder: (_) => SimpleSpeechDialog(onSubmitted: (text) => cubit.addMealFromText(text, mealType: meal)),
+      builder: (_) => SimpleSpeechDialog(
+          onSubmitted: (text) => cubit.addMealFromText(text, mealType: meal)),
     );
   }
 
@@ -122,13 +116,22 @@ class _AddFoodSheetState extends State<_AddFoodSheet> {
     final meal = _mealType;
     final parent = widget.parentContext;
     Navigator.pop(context);
-    Navigator.push(parent, MaterialPageRoute(builder: (_) => FoodSearchScreen(mealType: meal)));
+    Navigator.push(parent,
+        MaterialPageRoute(builder: (_) => FoodSearchScreen(mealType: meal)));
+  }
+
+  void _scan() {
+    final meal = _mealType;
+    final parent = widget.parentContext;
+    Navigator.pop(context);
+    scanAndLog(parent, mealType: meal);
   }
 
   void _recipes() {
     final parent = widget.parentContext;
     Navigator.pop(context);
-    Navigator.push(parent, MaterialPageRoute(builder: (_) => const RecipesScreen()));
+    Navigator.push(
+        parent, MaterialPageRoute(builder: (_) => const RecipesScreen()));
   }
 
   void _manual({required bool quick}) {
@@ -160,7 +163,9 @@ class _AddFoodSheetState extends State<_AddFoodSheet> {
                   child: Icon(icon, color: theme.colorScheme.primary),
                 ),
                 const SizedBox(height: 6),
-                Text(label, style: theme.textTheme.labelMedium, textAlign: TextAlign.center),
+                Text(label,
+                    style: theme.textTheme.labelMedium,
+                    textAlign: TextAlign.center),
               ],
             ),
           ),
@@ -172,7 +177,9 @@ class _AddFoodSheetState extends State<_AddFoodSheet> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 18),
-          Text(title, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+          Text(title,
+              style: theme.textTheme.titleSmall
+                  ?.copyWith(fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
           SizedBox(
             height: 40,
@@ -185,7 +192,9 @@ class _AddFoodSheetState extends State<_AddFoodSheet> {
                 return ActionChip(
                   label: Text('${f.name} · ${f.calories.round()}'),
                   onPressed: () {
-                    context.read<FoodLogCubit>().addFromTemplate(f, mealType: _mealType);
+                    context
+                        .read<FoodLogCubit>()
+                        .addFromTemplate(f, mealType: _mealType);
                     Navigator.pop(context);
                   },
                 );
@@ -203,7 +212,9 @@ class _AddFoodSheetState extends State<_AddFoodSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Add food', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+            Text('Add food',
+                style: theme.textTheme.titleLarge
+                    ?.copyWith(fontWeight: FontWeight.w800)),
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,
@@ -228,12 +239,15 @@ class _AddFoodSheetState extends State<_AddFoodSheet> {
               childAspectRatio: 0.95,
               children: [
                 action(Icons.search_rounded, 'Search', _search),
-                action(Icons.photo_camera_rounded, 'Camera', () => _pick(ImageSource.camera)),
-                action(Icons.photo_library_rounded, 'Gallery', () => _pick(ImageSource.gallery)),
-                action(Icons.auto_awesome_rounded, 'Describe', _describe),
-                action(Icons.mic_rounded, 'Voice', kIsWeb ? null : _voice),
-                action(Icons.edit_note_rounded, 'Manual', () => _manual(quick: false)),
-                action(Icons.bolt_rounded, 'Quick add', () => _manual(quick: true)),
+                action(Icons.qr_code_scanner_rounded, 'Scan barcode', _scan),
+                action(Icons.photo_camera_rounded, 'Photo (AI)',
+                    () => _pick(ImageSource.camera)),
+                action(Icons.photo_library_rounded, 'Gallery (AI)',
+                    () => _pick(ImageSource.gallery)),
+                action(Icons.auto_awesome_rounded, 'Describe (AI)', _describe),
+                action(Icons.mic_rounded, 'Voice (AI)', kIsWeb ? null : _voice),
+                action(Icons.edit_note_rounded, 'Manual',
+                    () => _manual(quick: false)),
                 action(Icons.menu_book_rounded, 'Recipes', _recipes),
               ],
             ),

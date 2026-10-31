@@ -7,8 +7,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 FoodItem _food(String name, {String note = ''}) => FoodItem(
-    id: name, name: name, calories: 100, protein: 5, carbs: 10, fat: 2, quantity: 50,
-    timestamp: DateTime(2026, 2, 3, 9, 5), mealType: 'breakfast', note: note);
+    id: name,
+    name: name,
+    calories: 100,
+    protein: 5,
+    carbs: 10,
+    fat: 2,
+    quantity: 50,
+    timestamp: DateTime(2026, 2, 3, 9, 5),
+    mealType: 'breakfast',
+    note: note);
 
 Future<TrackerStore> _store([Map<String, Object> initial = const {}]) async {
   SharedPreferences.setMockInitialValues(initial);
@@ -58,7 +66,8 @@ void main() {
     await s.setFastStart(null);
     expect(s.getFastStart(), isNull);
     for (var i = 0; i < 25; i++) {
-      await s.addFastRecord(FastRecord(start: start, end: start.add(Duration(hours: i)), goalHours: 16));
+      await s.addFastRecord(FastRecord(
+          start: start, end: start.add(Duration(hours: i)), goalHours: 16));
     }
     expect(s.getFastHistory().length, 20);
   });
@@ -70,8 +79,13 @@ void main() {
     expect(s.getPlan(day), isEmpty);
   });
 
-  test('export then import restores data and skips onboarding drafts', () async {
-    final a = await _store({'water_2026-02-03': 500, 'onboarding_draft_weight': '80', 'fast_goal_hours': 18});
+  test('export then import restores data and skips onboarding drafts',
+      () async {
+    final a = await _store({
+      'water_2026-02-03': 500,
+      'onboarding_draft_weight': '80',
+      'fast_goal_hours': 18
+    });
     final text = a.exportJson();
     expect(text, isNot(contains('onboarding_draft_')));
 
@@ -83,8 +97,10 @@ void main() {
 
   test('import rejects foreign or malformed files', () async {
     final s = await _store();
-    expect(() => s.importJson('{"app":"other","data":{}}'), throwsFormatException);
-    expect(() => s.importJson('{"app":"calorie_lens","data":5}'), throwsFormatException);
+    expect(
+        () => s.importJson('{"app":"other","data":{}}'), throwsFormatException);
+    expect(() => s.importJson('{"app":"calorie_lens","data":5}'),
+        throwsFormatException);
     expect(() => s.importJson('not json'), throwsFormatException);
   });
 

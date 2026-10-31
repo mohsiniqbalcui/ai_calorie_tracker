@@ -17,8 +17,10 @@ class CalorieCalculator {
       bmr = 447.593 + (9.247 * weight) + (3.098 * height) - (4.330 * age);
     } else {
       // Average BMR for other genders
-      double maleBmr = 88.362 + (13.397 * weight) + (4.799 * height) - (5.677 * age);
-      double femaleBmr = 447.593 + (9.247 * weight) + (3.098 * height) - (4.330 * age);
+      double maleBmr =
+          88.362 + (13.397 * weight) + (4.799 * height) - (5.677 * age);
+      double femaleBmr =
+          447.593 + (9.247 * weight) + (3.098 * height) - (4.330 * age);
       bmr = (maleBmr + femaleBmr) / 2;
     }
 

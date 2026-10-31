@@ -28,17 +28,17 @@ class SpeechService {
 
       // For mobile platforms, check and request microphone permission
       PermissionStatus status = await Permission.microphone.status;
-      
+
       if (status == PermissionStatus.denied) {
         // Request permission
         status = await Permission.microphone.request();
       }
-      
+
       if (status == PermissionStatus.permanentlyDenied) {
         _isInitialized = false;
         return false;
       }
-      
+
       if (status != PermissionStatus.granted) {
         _isInitialized = false;
         return false;
@@ -52,11 +52,11 @@ class SpeechService {
         },
       );
       _isInitialized = available;
-      
+
       if (!available) {
         print('Speech recognition initialization failed');
       }
-      
+
       return available;
     } catch (e) {
       print('Error initializing speech service: $e');
@@ -146,30 +146,31 @@ class SpeechService {
     if (kIsWeb) {
       return true; // Web doesn't need explicit permission
     }
-    
+
     final status = await Permission.microphone.request();
     return status == PermissionStatus.granted;
   }
 
   bool get isCurrentlyListening => _isListening;
 
-void _handleStatus(String status) {
-  if (status == 'notListening' && _isListening) {
-    if (_sessionStopwatch.isRunning && _sessionStopwatch.elapsed < const Duration(seconds: 20)) {
-      try {
-        _speechToText.listen(
-          onResult: (result) {},
-          listenFor: const Duration(seconds: 20),
-          pauseFor: const Duration(seconds: 3),
-          partialResults: true,
-          localeId: 'en_US',
-          listenMode: ListenMode.dictation,
-          cancelOnError: false,
-        );
-      } catch (e) {
-        print('Error auto-restarting listening: $e');
+  void _handleStatus(String status) {
+    if (status == 'notListening' && _isListening) {
+      if (_sessionStopwatch.isRunning &&
+          _sessionStopwatch.elapsed < const Duration(seconds: 20)) {
+        try {
+          _speechToText.listen(
+            onResult: (result) {},
+            listenFor: const Duration(seconds: 20),
+            pauseFor: const Duration(seconds: 3),
+            partialResults: true,
+            localeId: 'en_US',
+            listenMode: ListenMode.dictation,
+            cancelOnError: false,
+          );
+        } catch (e) {
+          print('Error auto-restarting listening: $e');
+        }
       }
     }
   }
-}
 }

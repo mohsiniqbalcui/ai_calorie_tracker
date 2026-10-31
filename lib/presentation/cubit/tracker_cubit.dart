@@ -35,14 +35,16 @@ class TrackerState {
   int get exerciseMinutes => exercises.fold(0, (s, e) => s + e.minutes);
   WeightEntry? get latestWeight => weights.isEmpty ? null : weights.last;
   bool get isFasting => fastStart != null;
-  bool isFavorite(String name) => favorites.any((f) => f.name.toLowerCase() == name.toLowerCase());
+  bool isFavorite(String name) =>
+      favorites.any((f) => f.name.toLowerCase() == name.toLowerCase());
   int get completedFasts => fastHistory.where((f) => f.completed).length;
 }
 
 class TrackerCubit extends Cubit<TrackerState> {
   final TrackerStore _store;
 
-  TrackerCubit(this._store) : super(TrackerState(date: DateFmt.dateOnly(DateTime.now()))) {
+  TrackerCubit(this._store)
+      : super(TrackerState(date: DateFmt.dateOnly(DateTime.now()))) {
     load();
   }
 
@@ -102,29 +104,33 @@ class TrackerCubit extends Cubit<TrackerState> {
   }
 
   Future<void> deleteExercise(String id) async {
-    await _store.setExercises(state.date, state.exercises.where((e) => e.id != id).toList());
+    await _store.setExercises(
+        state.date, state.exercises.where((e) => e.id != id).toList());
     load();
   }
 
   // ---- Weight ------------------------------------------------------------
   Future<void> addWeight(double kg, {DateTime? date}) async {
     final day = DateFmt.dateOnly(date ?? DateTime.now());
-    final list = state.weights.where((w) => !DateFmt.sameDay(w.date, day)).toList()
-      ..add(WeightEntry(date: day, kg: kg))
-      ..sort((a, b) => a.date.compareTo(b.date));
+    final list =
+        state.weights.where((w) => !DateFmt.sameDay(w.date, day)).toList()
+          ..add(WeightEntry(date: day, kg: kg))
+          ..sort((a, b) => a.date.compareTo(b.date));
     await _store.setWeights(list);
     load();
   }
 
   Future<void> deleteWeight(WeightEntry entry) async {
-    await _store.setWeights(state.weights.where((w) => w.date != entry.date).toList());
+    await _store
+        .setWeights(state.weights.where((w) => w.date != entry.date).toList());
     load();
   }
 
   // ---- Favorites ---------------------------------------------------------
   Future<void> toggleFavorite(FoodItem meal) async {
     final list = [...state.favorites];
-    final i = list.indexWhere((f) => f.name.toLowerCase() == meal.name.toLowerCase());
+    final i =
+        list.indexWhere((f) => f.name.toLowerCase() == meal.name.toLowerCase());
     if (i >= 0) {
       list.removeAt(i);
     } else {
@@ -143,7 +149,8 @@ class TrackerCubit extends Cubit<TrackerState> {
   Future<void> endFast() async {
     final start = state.fastStart;
     if (start == null) return;
-    await _store.addFastRecord(FastRecord(start: start, end: DateTime.now(), goalHours: state.fastGoalHours));
+    await _store.addFastRecord(FastRecord(
+        start: start, end: DateTime.now(), goalHours: state.fastGoalHours));
     await _store.setFastStart(null);
     load();
   }
@@ -174,14 +181,18 @@ class TrackerCubit extends Cubit<TrackerState> {
   // ---- Measurements ------------------------------------------------------
   Future<void> addMeasurement(MeasurementEntry entry) async {
     final day = DateFmt.dateOnly(entry.date);
-    final list = state.measurements.where((m) => !DateFmt.sameDay(m.date, day)).toList()..add(entry);
+    final list = state.measurements
+        .where((m) => !DateFmt.sameDay(m.date, day))
+        .toList()
+      ..add(entry);
     list.sort((a, b) => a.date.compareTo(b.date));
     await _store.setMeasurements(list);
     load();
   }
 
   Future<void> deleteMeasurement(MeasurementEntry entry) async {
-    await _store.setMeasurements(state.measurements.where((m) => m.date != entry.date).toList());
+    await _store.setMeasurements(
+        state.measurements.where((m) => m.date != entry.date).toList());
     load();
   }
 }

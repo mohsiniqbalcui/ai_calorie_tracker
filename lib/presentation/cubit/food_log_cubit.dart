@@ -20,7 +20,7 @@ class FoodLogState {
   final double totalSugar;
   final double totalSodium;
 
-  /// Last 30 days ending today, oldest first.
+  /// Last 90 days ending today, oldest first.
   final List<DayTotals> history;
   final int streak;
   final int lifetimeMeals;
@@ -49,8 +49,10 @@ class FoodLogState {
   bool get isToday => DateFmt.sameDay(selectedDate, DateTime.now());
 
   /// Calories for the last 7 days, oldest first.
-  List<double> get weeklyData =>
-      history.skip(history.length > 7 ? history.length - 7 : 0).map((d) => d.calories).toList();
+  List<double> get weeklyData => history
+      .skip(history.length > 7 ? history.length - 7 : 0)
+      .map((d) => d.calories)
+      .toList();
 
   FoodLogState copyWith({
     DateTime? selectedDate,
@@ -85,7 +87,8 @@ class FoodLogState {
       lifetimeMeals: lifetimeMeals ?? this.lifetimeMeals,
       isLoading: isLoading ?? this.isLoading,
       error: clearMessages ? null : (error ?? this.error),
-      successMessage: clearMessages ? null : (successMessage ?? this.successMessage),
+      successMessage:
+          clearMessages ? null : (successMessage ?? this.successMessage),
     );
   }
 }
@@ -103,7 +106,7 @@ class FoodLogCubit extends Cubit<FoodLogState> {
     try {
       final meals = await _repository.getDailyFoodLog(day);
       final totals = _calculateTotals(meals);
-      final history = await _loadHistory(30);
+      final history = await _loadHistory(90);
       emit(state.copyWith(
         selectedDate: day,
         meals: meals,
@@ -134,7 +137,13 @@ class FoodLogCubit extends Cubit<FoodLogState> {
       cb += m.carbs;
       f += m.fat;
     }
-    return DayTotals(date: date ?? state.selectedDate, calories: c, protein: p, carbs: cb, fat: f, meals: meals.length);
+    return DayTotals(
+        date: date ?? state.selectedDate,
+        calories: c,
+        protein: p,
+        carbs: cb,
+        fat: f,
+        meals: meals.length);
   }
 
   Future<List<DayTotals>> _loadHistory(int days) async {
@@ -142,15 +151,16 @@ class FoodLogCubit extends Cubit<FoodLogState> {
     final result = <DayTotals>[];
     for (int i = days - 1; i >= 0; i--) {
       final date = today.subtract(Duration(days: i));
-      result.add(_calculateTotals(await _repository.getDailyFoodLog(date), date));
+      result
+          .add(_calculateTotals(await _repository.getDailyFoodLog(date), date));
     }
     return result;
   }
 
   /// A timestamp on the selected day, using the current time of day.
-  DateTime _stamp() {
+  DateTime _stamp([DateTime? day]) {
     final now = DateTime.now();
-    final d = state.selectedDate;
+    final d = day ?? state.selectedDate;
     return DateTime(d.year, d.month, d.day, now.hour, now.minute, now.second);
   }
 
@@ -162,7 +172,8 @@ class FoodLogCubit extends Cubit<FoodLogState> {
       await _repository.addFoodItem(meal);
       await _store.addRecent(meal);
       await loadDailyLog();
-      if (successMessage != null) emit(state.copyWith(successMessage: successMessage));
+      if (successMessage != null)
+        emit(state.copyWith(successMessage: successMessage));
     } catch (e) {
       emit(state.copyWith(error: e.toString()));
     }
@@ -174,19 +185,22 @@ class FoodLogCubit extends Cubit<FoodLogState> {
     await _handleDetection(result, mealType);
   }
 
-  Future<void> addMealFromText(String foodDescription, {String? mealType}) async {
+  Future<void> addMealFromText(String foodDescription,
+      {String? mealType}) async {
     emit(state.copyWith(isLoading: true));
     final result = await _repository.detectFoodFromText(foodDescription);
     await _handleDetection(result, mealType);
   }
 
-  Future<void> _handleDetection(Either<String, FoodItem> result, String? mealType) async {
+  Future<void> _handleDetection(
+      Either<String, FoodItem> result, String? mealType) async {
     await result.fold(
       (failure) async => emit(state.copyWith(error: failure, isLoading: false)),
       (detected) async {
         final meal = _place(detected, mealType);
         await addMeal(meal,
-            successMessage: 'Added "${meal.name}" to ${MealTypes.byKey(meal.mealType).label.toLowerCase()}.');
+            successMessage:
+                'Added "${meal.name}" to ${MealTypes.byKey(meal.mealType).label.toLowerCase()}.');
       },
     );
   }
@@ -203,6 +217,8 @@ class FoodLogCubit extends Cubit<FoodLogState> {
     double fiber = 0,
     double sugar = 0,
     double sodium = 0,
+    DateTime? date,
+    String? imageUrl,
   }) {
     final meal = FoodItem(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
@@ -212,7 +228,8 @@ class FoodLogCubit extends Cubit<FoodLogState> {
       carbs: carbs,
       fat: fat,
       quantity: quantity,
-      timestamp: _stamp(),
+      imageUrl: imageUrl,
+      timestamp: _stamp(date),
       mealType: mealType ?? MealTypes.now(),
       note: note,
       fiber: fiber,
@@ -245,7 +262,8 @@ class FoodLogCubit extends Cubit<FoodLogState> {
   Future<void> copyMealsFrom(DateTime from) async {
     final source = await _repository.getDailyFoodLog(from);
     if (source.isEmpty) {
-      emit(state.copyWith(error: 'No meals found on ${DateFmt.short(from)} to copy.'));
+      emit(state.copyWith(
+          error: 'No meals found on ${DateFmt.short(from)} to copy.'));
       return;
     }
     var offset = 0;
@@ -268,7 +286,9 @@ class FoodLogCubit extends Cubit<FoodLogState> {
       await _repository.addFoodItem(copy);
     }
     await loadDailyLog();
-    emit(state.copyWith(successMessage: 'Copied ${source.length} meals from ${DateFmt.relative(from).toLowerCase()}.'));
+    emit(state.copyWith(
+        successMessage:
+            'Copied ${source.length} meals from ${DateFmt.relative(from).toLowerCase()}.'));
   }
 
   void clearMessages() => emit(state.copyWith(clearMessages: true));

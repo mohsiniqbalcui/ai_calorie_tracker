@@ -5,7 +5,8 @@ void main() {
   group('FoodDatabase', () {
     test('has unique names and sane nutrition values', () {
       final names = FoodDatabase.all.map((f) => f.name).toList();
-      expect(names.toSet().length, names.length, reason: 'duplicate food names');
+      expect(names.toSet().length, names.length,
+          reason: 'duplicate food names');
       expect(FoodDatabase.all.length, greaterThan(100));
       for (final f in FoodDatabase.all) {
         expect(f.kcal, inInclusiveRange(0, 900), reason: f.name);
@@ -50,7 +51,8 @@ void main() {
     test('diet filter only returns foods carrying every tag', () {
       for (final diet in FoodDatabase.diets) {
         final r = FoodDatabase.search('', diet: {diet.key});
-        expect(r.every((f) => f.tags.contains(diet.key)), isTrue, reason: diet.key);
+        expect(r.every((f) => f.tags.contains(diet.key)), isTrue,
+            reason: diet.key);
       }
       final vegan = FoodDatabase.search('', diet: {'vegan'});
       expect(vegan, isNotEmpty);

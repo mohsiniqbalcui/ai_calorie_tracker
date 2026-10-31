@@ -1,47 +1,52 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import '../cubit/settings_cubit.dart';
-import '../pro/pro_shell.dart';
-import 'graph_screen.dart';
+import 'diary_screen.dart';
 import 'home_screen.dart';
+import 'progress_screen.dart';
 import 'settings_screen.dart';
 
-/// Chooses between the Simple and Pro UI based on the single mode toggle.
-class MainScreen extends StatelessWidget {
+/// Four-destination shell shared by Simple and Pro: Home, Diary, Progress, More.
+class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final isPro = context.select((SettingsCubit c) => c.state.isPro);
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 250),
-      child: isPro ? const ProShell(key: ValueKey('pro')) : const SimpleShell(key: ValueKey('simple')),
-    );
-  }
+  State<MainScreen> createState() => _MainScreenState();
 }
 
-class SimpleShell extends StatefulWidget {
-  const SimpleShell({super.key});
-
-  @override
-  State<SimpleShell> createState() => _SimpleShellState();
-}
-
-class _SimpleShellState extends State<SimpleShell> {
+class _MainScreenState extends State<MainScreen> {
   int _index = 0;
 
   @override
   Widget build(BuildContext context) {
-    const screens = [HomeScreen(), GraphScreen(), SettingsScreen()];
     return Scaffold(
-      body: IndexedStack(index: _index, children: screens),
+      body: IndexedStack(
+        index: _index,
+        children: [
+          HomeScreen(onProfileTap: () => setState(() => _index = 3)),
+          const DiaryScreen(),
+          const ProgressScreen(),
+          const SettingsScreen(),
+        ],
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
         onDestinationSelected: (i) => setState(() => _index = i),
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home_rounded), label: 'Home'),
-          NavigationDestination(icon: Icon(Icons.bar_chart_outlined), selectedIcon: Icon(Icons.bar_chart_rounded), label: 'Progress'),
-          NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings_rounded), label: 'Settings'),
+          NavigationDestination(
+              icon: Icon(Icons.home_outlined),
+              selectedIcon: Icon(Icons.home_rounded),
+              label: 'Home'),
+          NavigationDestination(
+              icon: Icon(Icons.menu_book_outlined),
+              selectedIcon: Icon(Icons.menu_book_rounded),
+              label: 'Diary'),
+          NavigationDestination(
+              icon: Icon(Icons.insights_outlined),
+              selectedIcon: Icon(Icons.insights_rounded),
+              label: 'Progress'),
+          NavigationDestination(
+              icon: Icon(Icons.more_horiz_rounded),
+              selectedIcon: Icon(Icons.more_horiz_rounded),
+              label: 'More'),
         ],
       ),
     );

@@ -72,7 +72,8 @@ void main() {
     test('relative labels', () {
       final now = DateTime.now();
       expect(DateFmt.relative(now), 'Today');
-      expect(DateFmt.relative(now.subtract(const Duration(days: 1))), 'Yesterday');
+      expect(
+          DateFmt.relative(now.subtract(const Duration(days: 1))), 'Yesterday');
       expect(DateFmt.relative(now.add(const Duration(days: 1))), 'Tomorrow');
     });
   });

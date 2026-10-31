@@ -9,7 +9,8 @@ import '../screens/food_search_screen.dart';
 import '../widgets/common.dart';
 
 /// Logs [servings] of a recipe as a single diary entry.
-void logRecipe(BuildContext context, Recipe r, double servings, String mealType) {
+void logRecipe(
+    BuildContext context, Recipe r, double servings, String mealType) {
   context.read<FoodLogCubit>().addManual(
         name: r.name,
         calories: r.kcalPerServing * servings,
@@ -21,7 +22,9 @@ void logRecipe(BuildContext context, Recipe r, double servings, String mealType)
         fiber: r.fiberPerServing * servings,
         sugar: r.sugarPerServing * servings,
         sodium: r.sodiumPerServing * servings,
-        note: servings == 1 ? null : '${servings == servings.roundToDouble() ? servings.toInt() : servings} servings',
+        note: servings == 1
+            ? null
+            : '${servings == servings.roundToDouble() ? servings.toInt() : servings} servings',
       );
 }
 
@@ -38,7 +41,8 @@ class RecipesScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: Text(pick ? 'Pick a recipe' : 'My recipes')),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RecipeEditorScreen())),
+        onPressed: () => Navigator.push(context,
+            MaterialPageRoute(builder: (_) => const RecipeEditorScreen())),
         icon: const Icon(Icons.add_rounded),
         label: const Text('New recipe'),
       ),
@@ -49,11 +53,16 @@ class RecipesScreen extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.menu_book_rounded, size: 48, color: theme.colorScheme.primary),
+                    Icon(Icons.menu_book_rounded,
+                        size: 48, color: theme.colorScheme.primary),
                     const SizedBox(height: 12),
-                    Text('No recipes yet', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+                    Text('No recipes yet',
+                        style: theme.textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w800)),
                     const SizedBox(height: 6),
-                    const Text('Combine ingredients and we will work out the calories and macros per serving.', textAlign: TextAlign.center),
+                    const Text(
+                        'Combine ingredients and we will work out the calories and macros per serving.',
+                        textAlign: TextAlign.center),
                   ],
                 ),
               ),
@@ -66,20 +75,30 @@ class RecipesScreen extends StatelessWidget {
                 final r = recipes[i];
                 return Dismissible(
                   key: ValueKey(r.id),
-                  direction: pick ? DismissDirection.none : DismissDirection.endToStart,
+                  direction: pick
+                      ? DismissDirection.none
+                      : DismissDirection.endToStart,
                   background: Container(
                     alignment: Alignment.centerRight,
                     padding: const EdgeInsets.only(right: 24),
-                    decoration: BoxDecoration(color: theme.colorScheme.error, borderRadius: BorderRadius.circular(16)),
-                    child: const Icon(Icons.delete_rounded, color: Colors.white),
+                    decoration: BoxDecoration(
+                        color: theme.colorScheme.error,
+                        borderRadius: BorderRadius.circular(16)),
+                    child:
+                        const Icon(Icons.delete_rounded, color: Colors.white),
                   ),
-                  onDismissed: (_) => context.read<TrackerCubit>().deleteRecipe(r.id),
+                  onDismissed: (_) =>
+                      context.read<TrackerCubit>().deleteRecipe(r.id),
                   child: AppCard(
                     onTap: () {
                       if (pick) {
                         Navigator.pop(context, r);
                       } else {
-                        showModalBottomSheet(context: context, isScrollControlled: true, builder: (_) => _RecipeSheet(recipe: r, parent: context));
+                        showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            builder: (_) =>
+                                _RecipeSheet(recipe: r, parent: context));
                       }
                     },
                     child: Row(
@@ -88,17 +107,27 @@ class RecipesScreen extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(r.name, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
+                              Text(r.name,
+                                  style: theme.textTheme.titleSmall
+                                      ?.copyWith(fontWeight: FontWeight.w800)),
                               const SizedBox(height: 2),
-                              Text('${r.ingredients.length} ingredients · ${r.servings} servings', style: theme.textTheme.labelSmall),
+                              Text(
+                                  '${r.ingredients.length} ingredients · ${r.servings} servings',
+                                  style: theme.textTheme.labelSmall),
                               const SizedBox(height: 6),
-                              Text('P ${r.proteinPerServing.round()}  C ${r.carbsPerServing.round()}  F ${r.fatPerServing.round()}  per serving', style: theme.textTheme.labelSmall),
+                              Text(
+                                  'P ${r.proteinPerServing.round()}  C ${r.carbsPerServing.round()}  F ${r.fatPerServing.round()}  per serving',
+                                  style: theme.textTheme.labelSmall),
                             ],
                           ),
                         ),
                         Column(children: [
-                          Text('${r.kcalPerServing.round()}', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800, color: MacroColors.calories)),
-                          Text('kcal / serving', style: theme.textTheme.labelSmall),
+                          Text('${r.kcalPerServing.round()}',
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  color: MacroColors.calories)),
+                          Text('kcal / serving',
+                              style: theme.textTheme.labelSmall),
                         ]),
                       ],
                     ),
@@ -134,19 +163,36 @@ class _RecipeSheetState extends State<_RecipeSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(r.name, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+            Text(r.name,
+                style: theme.textTheme.titleLarge
+                    ?.copyWith(fontWeight: FontWeight.w800)),
             const SizedBox(height: 10),
             for (final i in r.ingredients)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 2),
-                child: Row(children: [Expanded(child: Text(i.name)), Text('${i.grams.round()} g · ${i.kcal.round()} kcal', style: theme.textTheme.labelMedium)]),
+                child: Row(children: [
+                  Expanded(child: Text(i.name)),
+                  Text('${i.grams.round()} g · ${i.kcal.round()} kcal',
+                      style: theme.textTheme.labelMedium)
+                ]),
               ),
             const Divider(height: 24),
             Row(
               children: [
-                IconButton.outlined(onPressed: () => setState(() => _servings = (_servings - 0.5).clamp(0.5, 20)), icon: const Icon(Icons.remove_rounded)),
-                Expanded(child: Center(child: Text('${_servings == _servings.roundToDouble() ? _servings.toInt() : _servings} serving(s) · ${(r.kcalPerServing * _servings).round()} kcal', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)))),
-                IconButton.outlined(onPressed: () => setState(() => _servings = (_servings + 0.5).clamp(0.5, 20)), icon: const Icon(Icons.add_rounded)),
+                IconButton.outlined(
+                    onPressed: () => setState(
+                        () => _servings = (_servings - 0.5).clamp(0.5, 20)),
+                    icon: const Icon(Icons.remove_rounded)),
+                Expanded(
+                    child: Center(
+                        child: Text(
+                            '${_servings == _servings.roundToDouble() ? _servings.toInt() : _servings} serving(s) · ${(r.kcalPerServing * _servings).round()} kcal',
+                            style: theme.textTheme.titleSmall
+                                ?.copyWith(fontWeight: FontWeight.w800)))),
+                IconButton.outlined(
+                    onPressed: () => setState(
+                        () => _servings = (_servings + 0.5).clamp(0.5, 20)),
+                    icon: const Icon(Icons.add_rounded)),
               ],
             ),
             const SizedBox(height: 10),
@@ -154,7 +200,11 @@ class _RecipeSheetState extends State<_RecipeSheet> {
               spacing: 8,
               children: [
                 for (final m in MealTypes.all)
-                  ChoiceChip(avatar: Icon(m.icon, size: 16), label: Text(m.label), selected: _mealType == m.key, onSelected: (_) => setState(() => _mealType = m.key)),
+                  ChoiceChip(
+                      avatar: Icon(m.icon, size: 16),
+                      label: Text(m.label),
+                      selected: _mealType == m.key,
+                      onSelected: (_) => setState(() => _mealType = m.key)),
               ],
             ),
             const SizedBox(height: 14),
@@ -164,7 +214,10 @@ class _RecipeSheetState extends State<_RecipeSheet> {
                   child: OutlinedButton.icon(
                     onPressed: () {
                       Navigator.pop(context);
-                      Navigator.push(widget.parent, MaterialPageRoute(builder: (_) => RecipeEditorScreen(existing: r)));
+                      Navigator.push(
+                          widget.parent,
+                          MaterialPageRoute(
+                              builder: (_) => RecipeEditorScreen(existing: r)));
                     },
                     icon: const Icon(Icons.edit_rounded),
                     label: const Text('Edit'),
@@ -177,7 +230,8 @@ class _RecipeSheetState extends State<_RecipeSheet> {
                     onPressed: () {
                       logRecipe(widget.parent, r, _servings, _mealType);
                       Navigator.pop(context);
-                      ScaffoldMessenger.of(widget.parent).showSnackBar(SnackBar(content: Text('Logged ${r.name}')));
+                      ScaffoldMessenger.of(widget.parent).showSnackBar(
+                          SnackBar(content: Text('Logged ${r.name}')));
                     },
                     icon: const Icon(Icons.add_rounded),
                     label: const Text('Log to diary'),
@@ -203,7 +257,9 @@ class RecipeEditorScreen extends StatefulWidget {
 class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
   late final _name = TextEditingController(text: widget.existing?.name ?? '');
   late int _servings = widget.existing?.servings ?? 2;
-  late final List<RecipeIngredient> _ingredients = [...?widget.existing?.ingredients];
+  late final List<RecipeIngredient> _ingredients = [
+    ...?widget.existing?.ingredients
+  ];
 
   @override
   void dispose() {
@@ -212,14 +268,16 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
   }
 
   Recipe get _draft => Recipe(
-        id: widget.existing?.id ?? DateTime.now().microsecondsSinceEpoch.toString(),
+        id: widget.existing?.id ??
+            DateTime.now().microsecondsSinceEpoch.toString(),
         name: _name.text.trim(),
         servings: _servings,
         ingredients: _ingredients,
       );
 
   Future<void> _addIngredient() async {
-    final result = await Navigator.push<ServingResult>(context, MaterialPageRoute(builder: (_) => const FoodSearchScreen(pick: true)));
+    final result = await Navigator.push<ServingResult>(context,
+        MaterialPageRoute(builder: (_) => const FoodSearchScreen(pick: true)));
     if (result == null) return;
     final p = result.portion;
     setState(() => _ingredients.add(RecipeIngredient(
@@ -237,7 +295,8 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
 
   void _save() {
     if (_name.text.trim().isEmpty || _ingredients.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Add a name and at least one ingredient.')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Add a name and at least one ingredient.')));
       return;
     }
     context.read<TrackerCubit>().saveRecipe(_draft);
@@ -248,41 +307,73 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final r = _draft;
-    Widget stat(String l, String v, Color c) => Expanded(child: Column(children: [Text(v, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800, color: c)), Text(l, style: theme.textTheme.labelSmall)]));
+    Widget stat(String l, String v, Color c) => Expanded(
+            child: Column(children: [
+          Text(v,
+              style: theme.textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w800, color: c)),
+          Text(l, style: theme.textTheme.labelSmall)
+        ]));
 
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.existing == null ? 'New recipe' : 'Edit recipe'),
-        actions: [Padding(padding: const EdgeInsets.only(right: 8), child: FilledButton(onPressed: _save, child: const Text('Save')))],
+        actions: [
+          Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: FilledButton(onPressed: _save, child: const Text('Save')))
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          TextField(controller: _name, textCapitalization: TextCapitalization.sentences, decoration: const InputDecoration(labelText: 'Recipe name'), onChanged: (_) => setState(() {})),
+          TextField(
+              controller: _name,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: const InputDecoration(labelText: 'Recipe name'),
+              onChanged: (_) => setState(() {})),
           const SizedBox(height: 12),
           Row(
             children: [
               Expanded(child: Text('Makes', style: theme.textTheme.titleSmall)),
-              IconButton.outlined(onPressed: _servings > 1 ? () => setState(() => _servings--) : null, icon: const Icon(Icons.remove_rounded)),
-              SizedBox(width: 70, child: Center(child: Text('$_servings servings', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)))),
-              IconButton.outlined(onPressed: () => setState(() => _servings++), icon: const Icon(Icons.add_rounded)),
+              IconButton.outlined(
+                  onPressed:
+                      _servings > 1 ? () => setState(() => _servings--) : null,
+                  icon: const Icon(Icons.remove_rounded)),
+              SizedBox(
+                  width: 70,
+                  child: Center(
+                      child: Text('$_servings servings',
+                          style: theme.textTheme.titleSmall
+                              ?.copyWith(fontWeight: FontWeight.w800)))),
+              IconButton.outlined(
+                  onPressed: () => setState(() => _servings++),
+                  icon: const Icon(Icons.add_rounded)),
             ],
           ),
           const SizedBox(height: 12),
           AppCard(
             color: theme.colorScheme.primary.withValues(alpha: 0.06),
             child: Column(children: [
-              Text('${r.kcalPerServing.round()} kcal per serving', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+              Text('${r.kcalPerServing.round()} kcal per serving',
+                  style: theme.textTheme.titleLarge
+                      ?.copyWith(fontWeight: FontWeight.w800)),
               const SizedBox(height: 10),
               Row(children: [
-                stat('Protein', '${r.proteinPerServing.toStringAsFixed(1)} g', MacroColors.protein),
-                stat('Carbs', '${r.carbsPerServing.toStringAsFixed(1)} g', MacroColors.carbs),
-                stat('Fat', '${r.fatPerServing.toStringAsFixed(1)} g', MacroColors.fat),
+                stat('Protein', '${r.proteinPerServing.toStringAsFixed(1)} g',
+                    MacroColors.protein),
+                stat('Carbs', '${r.carbsPerServing.toStringAsFixed(1)} g',
+                    MacroColors.carbs),
+                stat('Fat', '${r.fatPerServing.toStringAsFixed(1)} g',
+                    MacroColors.fat),
               ]),
             ]),
           ),
           const SectionTitle('Ingredients'),
-          if (_ingredients.isEmpty) const Padding(padding: EdgeInsets.all(16), child: Center(child: Text('No ingredients yet.'))),
+          if (_ingredients.isEmpty)
+            const Padding(
+                padding: EdgeInsets.all(16),
+                child: Center(child: Text('No ingredients yet.'))),
           for (var i = 0; i < _ingredients.length; i++)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
@@ -290,14 +381,23 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 4, 4, 4),
                 child: Row(
                   children: [
-                    Expanded(child: Text('${_ingredients[i].name}  ·  ${_ingredients[i].grams.round()} g')),
-                    Text('${_ingredients[i].kcal.round()} kcal', style: theme.textTheme.labelLarge),
-                    IconButton(onPressed: () => setState(() => _ingredients.removeAt(i)), icon: const Icon(Icons.close_rounded)),
+                    Expanded(
+                        child: Text(
+                            '${_ingredients[i].name}  ·  ${_ingredients[i].grams.round()} g')),
+                    Text('${_ingredients[i].kcal.round()} kcal',
+                        style: theme.textTheme.labelLarge),
+                    IconButton(
+                        onPressed: () =>
+                            setState(() => _ingredients.removeAt(i)),
+                        icon: const Icon(Icons.close_rounded)),
                   ],
                 ),
               ),
             ),
-          OutlinedButton.icon(onPressed: _addIngredient, icon: const Icon(Icons.add_rounded), label: const Text('Add ingredient')),
+          OutlinedButton.icon(
+              onPressed: _addIngredient,
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Add ingredient')),
         ],
       ),
     );

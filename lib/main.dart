@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'data/remote/open_food_facts.dart';
 import 'data/repositories/food_repository.dart';
 import 'data/services/food_service.dart';
 import 'data/local/preference_manager.dart';
@@ -42,7 +43,8 @@ Future<bool> _initFirebase() async {
       FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
       return true;
     };
-    await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(!kDebugMode);
+    await FirebaseCrashlytics.instance
+        .setCrashlyticsCollectionEnabled(!kDebugMode);
     await FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(!kDebugMode);
     return true;
   } catch (e) {
@@ -56,11 +58,11 @@ void main() async {
 
   await _loadEnvironmentFile();
   await _initFirebase();
-  
+
   // Initialize SharedPreferences
   final prefs = await SharedPreferences.getInstance();
   final preferenceManager = PreferenceManager(prefs);
-  
+
   // Check if user has already completed onboarding by checking if user data exists
   final userData = preferenceManager.getUserData();
   final onboardingComplete = prefs.getBool('onboarding_complete') ?? false;
@@ -70,7 +72,7 @@ void main() async {
   // Initialize services and repositories
   final foodService = FoodService();
   final foodRepository = FoodRepository(foodService, prefs);
-  
+
   final trackerStore = TrackerStore(prefs);
 
   runApp(MyApp(
@@ -97,26 +99,36 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RepositoryProvider.value(
-      value: trackerStore,
+    return MultiRepositoryProvider(
+      providers: [
+        RepositoryProvider.value(value: trackerStore),
+        RepositoryProvider(create: (_) => OpenFoodFactsSource()),
+      ],
       child: MultiBlocProvider(
         providers: [
           BlocProvider.value(value: settingsCubit),
-          BlocProvider(create: (_) => FoodLogCubit(foodRepository, trackerStore)..loadDailyLog()),
+          BlocProvider(
+              create: (_) =>
+                  FoodLogCubit(foodRepository, trackerStore)..loadDailyLog()),
           BlocProvider(create: (_) => TrackerCubit(trackerStore)),
         ],
         child: BlocBuilder<SettingsCubit, AppSettings>(
-          buildWhen: (a, b) => a.uiMode != b.uiMode || a.themeMode != b.themeMode,
+          buildWhen: (a, b) =>
+              a.uiMode != b.uiMode || a.themeMode != b.themeMode,
           builder: (context, settings) {
             return MaterialApp(
               debugShowCheckedModeBanner: false,
               title: 'Calorie Lens',
               // Pro is a white, professional look; it only goes dark when chosen explicitly.
-              themeMode: settings.isPro && settings.themeMode == ThemeMode.system ? ThemeMode.light : settings.themeMode,
+              themeMode:
+                  settings.isPro && settings.themeMode == ThemeMode.system
+                      ? ThemeMode.light
+                      : settings.themeMode,
               theme: AppTheme.build(settings.uiMode, Brightness.light),
               darkTheme: AppTheme.build(settings.uiMode, Brightness.dark),
               home: SplashScreen(
-                nextBuilder: () => showOnboarding ? OnboardingScreen() : const MainScreen(),
+                nextBuilder: () =>
+                    showOnboarding ? OnboardingScreen() : const MainScreen(),
                 durationMs: 2000,
               ),
               routes: {

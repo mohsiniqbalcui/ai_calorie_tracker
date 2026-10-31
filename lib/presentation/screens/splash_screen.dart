@@ -46,9 +46,12 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.local_fire_department, size: 64, color: theme.colorScheme.primary),
+            Icon(Icons.local_fire_department,
+                size: 64, color: theme.colorScheme.primary),
             SizedBox(height: 12),
-            Text('Calorie Lens', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+            Text('Calorie Lens',
+                style: theme.textTheme.titleLarge
+                    ?.copyWith(fontWeight: FontWeight.bold)),
             SizedBox(height: 24),
             SizedBox(width: 48, height: 48, child: CircularProgressIndicator()),
           ],
@@ -57,5 +60,3 @@ class _SplashScreenState extends State<SplashScreen> {
     );
   }
 }
-
-

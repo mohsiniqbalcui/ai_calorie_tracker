@@ -22,10 +22,10 @@ class FoodService {
     Gemini.init(apiKey: _apiKey);
   }
   Future<Either<String, FoodItem>> detectFoodAndCalories(File imageFile) async {
-  try {
-    if (!imageFile.existsSync()) {
-      return Left('File not found: ${imageFile.path}');
-    }
+    try {
+      if (!imageFile.existsSync()) {
+        return Left('File not found: ${imageFile.path}');
+      }
 
       final response = await Gemini.instance.textAndImage(
         text: 'Analyze this image and identify the food. '
@@ -35,45 +35,45 @@ class FoodService {
         images: [imageFile.readAsBytesSync()],
       );
 
-    final output = response?.output;
-    if (output == null || output.isEmpty) {
-      return Left('No response output from Gemini API');
-    }
+      final output = response?.output;
+      if (output == null || output.isEmpty) {
+        return Left('No response output from Gemini API');
+      }
 
-    // Try to find JSON in the output, handling various formats
-    String jsonString = '';
-    
-    // First, try to find complete JSON object
-    final completeMatch = RegExp(r'\{.*\}').firstMatch(output);
-    if (completeMatch != null) {
-      jsonString = completeMatch.group(0)!;
-    } else {
-      // If no complete JSON found, try to extract and fix malformed JSON
-      final jsonStart = output.indexOf('"name"');
-      if (jsonStart != -1) {
-        // Find the end of the JSON object
-        final jsonEnd = output.indexOf('}', jsonStart);
-        if (jsonEnd != -1) {
-          // Extract the JSON part and add missing opening brace
-          jsonString = '{' + output.substring(jsonStart, jsonEnd + 1);
+      // Try to find JSON in the output, handling various formats
+      String jsonString = '';
+
+      // First, try to find complete JSON object
+      final completeMatch = RegExp(r'\{.*\}').firstMatch(output);
+      if (completeMatch != null) {
+        jsonString = completeMatch.group(0)!;
+      } else {
+        // If no complete JSON found, try to extract and fix malformed JSON
+        final jsonStart = output.indexOf('"name"');
+        if (jsonStart != -1) {
+          // Find the end of the JSON object
+          final jsonEnd = output.indexOf('}', jsonStart);
+          if (jsonEnd != -1) {
+            // Extract the JSON part and add missing opening brace
+            jsonString = '{' + output.substring(jsonStart, jsonEnd + 1);
+          }
         }
       }
-    }
-    
-    if (jsonString.isEmpty) {
-      return Left('No valid JSON found in output: $output');
-    }
 
-    final foodData = jsonDecode(jsonString);
+      if (jsonString.isEmpty) {
+        return Left('No valid JSON found in output: $output');
+      }
 
-    // Validate that all required fields are present
-    if (!foodData.containsKey('name') || 
-        !foodData.containsKey('calories') || 
-        !foodData.containsKey('protein') || 
-        !foodData.containsKey('carbs') || 
-        !foodData.containsKey('fat')) {
-      return Left('Invalid JSON structure: missing required fields');
-    }
+      final foodData = jsonDecode(jsonString);
+
+      // Validate that all required fields are present
+      if (!foodData.containsKey('name') ||
+          !foodData.containsKey('calories') ||
+          !foodData.containsKey('protein') ||
+          !foodData.containsKey('carbs') ||
+          !foodData.containsKey('fat')) {
+        return Left('Invalid JSON structure: missing required fields');
+      }
 
       final foodItem = FoodItem(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -93,7 +93,8 @@ class FoodService {
     }
   }
 
-  Future<Either<String, FoodItem>> detectFoodFromText(String foodDescription) async {
+  Future<Either<String, FoodItem>> detectFoodFromText(
+      String foodDescription) async {
     print('=== FOOD SERVICE DETECTFOODFROMTEXT CALLED ===');
     print('Food description: "$foodDescription"');
     try {
@@ -119,7 +120,7 @@ class FoodService {
 
       // Try to find JSON in the output, handling various formats
       String jsonString = '';
-      
+
       // First, try to find complete JSON object
       final completeMatch = RegExp(r'\{.*\}').firstMatch(output);
       if (completeMatch != null) {
@@ -136,7 +137,7 @@ class FoodService {
           }
         }
       }
-      
+
       if (jsonString.isEmpty) {
         return Left('No valid JSON found in output: $output');
       }
@@ -144,10 +145,10 @@ class FoodService {
       final foodData = jsonDecode(jsonString);
 
       // Validate that all required fields are present
-      if (!foodData.containsKey('name') || 
-          !foodData.containsKey('calories') || 
-          !foodData.containsKey('protein') || 
-          !foodData.containsKey('carbs') || 
+      if (!foodData.containsKey('name') ||
+          !foodData.containsKey('calories') ||
+          !foodData.containsKey('protein') ||
+          !foodData.containsKey('carbs') ||
           !foodData.containsKey('fat')) {
         return Left('Invalid JSON structure: missing required fields');
       }

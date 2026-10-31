@@ -49,7 +49,8 @@ class FastRecord {
   final DateTime end;
   final int goalHours;
 
-  const FastRecord({required this.start, required this.end, required this.goalHours});
+  const FastRecord(
+      {required this.start, required this.end, required this.goalHours});
 
   Duration get duration => end.difference(start);
   bool get completed => duration.inMinutes >= goalHours * 60;
@@ -139,9 +140,14 @@ class Recipe {
   final int servings;
   final List<RecipeIngredient> ingredients;
 
-  const Recipe({required this.id, required this.name, required this.servings, required this.ingredients});
+  const Recipe(
+      {required this.id,
+      required this.name,
+      required this.servings,
+      required this.ingredients});
 
-  double _sum(double Function(RecipeIngredient) f) => ingredients.fold(0.0, (s, i) => s + f(i));
+  double _sum(double Function(RecipeIngredient) f) =>
+      ingredients.fold(0.0, (s, i) => s + f(i));
 
   double get totalGrams => _sum((i) => i.grams);
   double get kcalPerServing => _sum((i) => i.kcal) / servings;
@@ -164,7 +170,9 @@ class Recipe {
         id: j['id'] as String,
         name: j['name'] as String,
         servings: (j['servings'] as num).toInt(),
-        ingredients: (j['ingredients'] as List).map((e) => RecipeIngredient.fromJson(e as Map<String, dynamic>)).toList(),
+        ingredients: (j['ingredients'] as List)
+            .map((e) => RecipeIngredient.fromJson(e as Map<String, dynamic>))
+            .toList(),
       );
 }
 
@@ -221,7 +229,14 @@ class MeasurementEntry {
   final double? arm;
   final double? thigh;
 
-  const MeasurementEntry({required this.date, this.bodyFat, this.waist, this.chest, this.hips, this.arm, this.thigh});
+  const MeasurementEntry(
+      {required this.date,
+      this.bodyFat,
+      this.waist,
+      this.chest,
+      this.hips,
+      this.arm,
+      this.thigh});
 
   Map<String, dynamic> toJson() => {
         'date': date.toIso8601String(),

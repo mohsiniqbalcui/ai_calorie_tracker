@@ -30,17 +30,24 @@ class MeasurementsScreen extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 10),
                   child: TextField(
                     controller: controllers[i],
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: InputDecoration(labelText: i == 0 ? labels[i] : '${labels[i]} ($unit)'),
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                        labelText: i == 0 ? labels[i] : '${labels[i]} ($unit)'),
                   ),
                 ),
-              const Text('Fill in only what you measured.', style: TextStyle(fontSize: 12)),
+              const Text('Fill in only what you measured.',
+                  style: TextStyle(fontSize: 12)),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Save')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Save')),
         ],
       ),
     );
@@ -60,7 +67,14 @@ class MeasurementsScreen extends StatelessWidget {
       arm: v(4),
       thigh: v(5),
     );
-    if ([entry.bodyFat, entry.waist, entry.chest, entry.hips, entry.arm, entry.thigh].every((e) => e == null)) return;
+    if ([
+      entry.bodyFat,
+      entry.waist,
+      entry.chest,
+      entry.hips,
+      entry.arm,
+      entry.thigh
+    ].every((e) => e == null)) return;
     tracker.addMeasurement(entry);
   }
 
@@ -70,13 +84,19 @@ class MeasurementsScreen extends StatelessWidget {
     final metric = context.watch<SettingsCubit>().state.metric;
     final list = context.watch<TrackerCubit>().state.measurements;
 
-    String len(double? cm) => cm == null ? '—' : (metric ? '${cm.toStringAsFixed(1)} cm' : '${(cm / 2.54).toStringAsFixed(1)} in');
+    String len(double? cm) => cm == null
+        ? '—'
+        : (metric
+            ? '${cm.toStringAsFixed(1)} cm'
+            : '${(cm / 2.54).toStringAsFixed(1)} in');
 
     // Latest recorded value of each field, with the change from the one before.
-    Widget field(String label, double? Function(MeasurementEntry) get, {bool percent = false}) {
+    Widget field(String label, double? Function(MeasurementEntry) get,
+        {bool percent = false}) {
       final values = list.map(get).whereType<double>().toList();
       final latest = values.isEmpty ? null : values.last;
-      final delta = values.length >= 2 ? values.last - values[values.length - 2] : null;
+      final delta =
+          values.length >= 2 ? values.last - values[values.length - 2] : null;
       return AppCard(
         padding: const EdgeInsets.all(12),
         child: Column(
@@ -84,11 +104,18 @@ class MeasurementsScreen extends StatelessWidget {
           children: [
             Text(label, style: theme.textTheme.labelMedium),
             const SizedBox(height: 4),
-            Text(latest == null ? '—' : (percent ? '${latest.toStringAsFixed(1)}%' : len(latest)), style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+            Text(
+                latest == null
+                    ? '—'
+                    : (percent ? '${latest.toStringAsFixed(1)}%' : len(latest)),
+                style: theme.textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w800)),
             if (delta != null)
               Text(
                 '${delta > 0 ? '+' : ''}${(percent || metric ? delta : delta / 2.54).toStringAsFixed(1)}${percent ? '%' : (metric ? ' cm' : ' in')}',
-                style: theme.textTheme.labelSmall?.copyWith(color: delta <= 0 ? Colors.green : Colors.orange, fontWeight: FontWeight.w700),
+                style: theme.textTheme.labelSmall?.copyWith(
+                    color: delta <= 0 ? Colors.green : Colors.orange,
+                    fontWeight: FontWeight.w700),
               ),
           ],
         ),
@@ -97,7 +124,10 @@ class MeasurementsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Body measurements')),
-      floatingActionButton: FloatingActionButton.extended(onPressed: () => _add(context), icon: const Icon(Icons.add_rounded), label: const Text('Log')),
+      floatingActionButton: FloatingActionButton.extended(
+          onPressed: () => _add(context),
+          icon: const Icon(Icons.add_rounded),
+          label: const Text('Log')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
         children: [
@@ -118,7 +148,10 @@ class MeasurementsScreen extends StatelessWidget {
             ],
           ),
           const SectionTitle('History'),
-          if (list.isEmpty) const Padding(padding: EdgeInsets.all(24), child: Center(child: Text('No measurements yet.'))),
+          if (list.isEmpty)
+            const Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(child: Text('No measurements yet.'))),
           for (final m in list.reversed)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
@@ -130,19 +163,27 @@ class MeasurementsScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(DateFmt.short(m.date), style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
-                          Text([
-                            if (m.bodyFat != null) 'BF ${m.bodyFat!.toStringAsFixed(1)}%',
-                            if (m.waist != null) 'Waist ${len(m.waist)}',
-                            if (m.chest != null) 'Chest ${len(m.chest)}',
-                            if (m.hips != null) 'Hips ${len(m.hips)}',
-                            if (m.arm != null) 'Arm ${len(m.arm)}',
-                            if (m.thigh != null) 'Thigh ${len(m.thigh)}',
-                          ].join('  ·  '), style: theme.textTheme.labelSmall),
+                          Text(DateFmt.short(m.date),
+                              style: theme.textTheme.titleSmall
+                                  ?.copyWith(fontWeight: FontWeight.w700)),
+                          Text(
+                              [
+                                if (m.bodyFat != null)
+                                  'BF ${m.bodyFat!.toStringAsFixed(1)}%',
+                                if (m.waist != null) 'Waist ${len(m.waist)}',
+                                if (m.chest != null) 'Chest ${len(m.chest)}',
+                                if (m.hips != null) 'Hips ${len(m.hips)}',
+                                if (m.arm != null) 'Arm ${len(m.arm)}',
+                                if (m.thigh != null) 'Thigh ${len(m.thigh)}',
+                              ].join('  ·  '),
+                              style: theme.textTheme.labelSmall),
                         ],
                       ),
                     ),
-                    IconButton(onPressed: () => context.read<TrackerCubit>().deleteMeasurement(m), icon: const Icon(Icons.delete_outline_rounded)),
+                    IconButton(
+                        onPressed: () =>
+                            context.read<TrackerCubit>().deleteMeasurement(m),
+                        icon: const Icon(Icons.delete_outline_rounded)),
                   ],
                 ),
               ),

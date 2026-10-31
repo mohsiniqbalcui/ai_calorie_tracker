@@ -32,7 +32,8 @@ class AlertMessageWidget extends StatelessWidget {
             child: Text(
               errorMessage ?? successMessage ?? '',
               style: TextStyle(
-                color: errorMessage != null ? Colors.red[900] : Colors.green[900],
+                color:
+                    errorMessage != null ? Colors.red[900] : Colors.green[900],
               ),
             ),
           ),
@@ -45,4 +46,4 @@ class AlertMessageWidget extends StatelessWidget {
       ),
     );
   }
-} 
+}

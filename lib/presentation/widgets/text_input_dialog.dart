@@ -92,13 +92,13 @@ class _TextInputDialogState extends State<TextInputDialog> {
         ),
         ElevatedButton(
           onPressed: _isLoading ? null : _handleSubmit,
-          child: _isLoading 
-            ? SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : Text('Add Food'),
+          child: _isLoading
+              ? SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Text('Add Food'),
         ),
       ],
     );

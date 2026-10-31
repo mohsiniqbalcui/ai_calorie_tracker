@@ -36,7 +36,8 @@ class FoodItem {
     this.sodium = 0,
   });
 
-  factory FoodItem.fromJson(Map<String, dynamic> json) => _$FoodItemFromJson(json);
+  factory FoodItem.fromJson(Map<String, dynamic> json) =>
+      _$FoodItemFromJson(json);
   Map<String, dynamic> toJson() => _$FoodItemToJson(this);
 
   FoodItem copyWith({

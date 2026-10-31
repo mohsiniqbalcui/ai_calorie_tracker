@@ -28,7 +28,8 @@ class TrackerStore {
   }
 
   Future<void> setExercises(DateTime d, List<ExerciseEntry> list) =>
-      prefs.setString('exercise_${dayKey(d)}', json.encode(list.map((e) => e.toJson()).toList()));
+      prefs.setString('exercise_${dayKey(d)}',
+          json.encode(list.map((e) => e.toJson()).toList()));
 
   // ---- Weight ------------------------------------------------------------
   List<WeightEntry> getWeights() {
@@ -41,8 +42,8 @@ class TrackerStore {
     return list;
   }
 
-  Future<void> setWeights(List<WeightEntry> list) =>
-      prefs.setString('weight_log', json.encode(list.map((e) => e.toJson()).toList()));
+  Future<void> setWeights(List<WeightEntry> list) => prefs.setString(
+      'weight_log', json.encode(list.map((e) => e.toJson()).toList()));
 
   // ---- Favorites & recents ----------------------------------------------
   List<FoodItem> _foods(String key) {
@@ -57,12 +58,14 @@ class TrackerStore {
       prefs.setString(key, json.encode(list.map((e) => e.toJson()).toList()));
 
   List<FoodItem> getFavorites() => _foods('favorite_foods');
-  Future<void> setFavorites(List<FoodItem> list) => _saveFoods('favorite_foods', list);
+  Future<void> setFavorites(List<FoodItem> list) =>
+      _saveFoods('favorite_foods', list);
 
   List<FoodItem> getRecents() => _foods('recent_foods');
 
   Future<void> addRecent(FoodItem item) async {
-    final list = getRecents()..removeWhere((f) => f.name.toLowerCase() == item.name.toLowerCase());
+    final list = getRecents()
+      ..removeWhere((f) => f.name.toLowerCase() == item.name.toLowerCase());
     list.insert(0, item);
     await _saveFoods('recent_foods', list.take(12).toList());
   }
@@ -90,42 +93,49 @@ class TrackerStore {
 
   Future<void> addFastRecord(FastRecord r) {
     final list = getFastHistory()..insert(0, r);
-    return prefs.setString(
-        'fast_history', json.encode(list.take(20).map((e) => e.toJson()).toList()));
+    return prefs.setString('fast_history',
+        json.encode(list.take(20).map((e) => e.toJson()).toList()));
   }
 
   // ---- Recipes -----------------------------------------------------------
   List<Recipe> getRecipes() {
     final raw = prefs.getString('recipes');
     if (raw == null) return [];
-    return (json.decode(raw) as List).map((e) => Recipe.fromJson(e as Map<String, dynamic>)).toList();
+    return (json.decode(raw) as List)
+        .map((e) => Recipe.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
-  Future<void> setRecipes(List<Recipe> list) =>
-      prefs.setString('recipes', json.encode(list.map((e) => e.toJson()).toList()));
+  Future<void> setRecipes(List<Recipe> list) => prefs.setString(
+      'recipes', json.encode(list.map((e) => e.toJson()).toList()));
 
   // ---- Meal plan ---------------------------------------------------------
   List<PlannedItem> getPlan(DateTime d) {
     final raw = prefs.getString('meal_plan_${dayKey(d)}');
     if (raw == null) return [];
-    return (json.decode(raw) as List).map((e) => PlannedItem.fromJson(e as Map<String, dynamic>)).toList();
+    return (json.decode(raw) as List)
+        .map((e) => PlannedItem.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<void> setPlan(DateTime d, List<PlannedItem> list) => list.isEmpty
       ? prefs.remove('meal_plan_${dayKey(d)}')
-      : prefs.setString('meal_plan_${dayKey(d)}', json.encode(list.map((e) => e.toJson()).toList()));
+      : prefs.setString('meal_plan_${dayKey(d)}',
+          json.encode(list.map((e) => e.toJson()).toList()));
 
   // ---- Measurements ------------------------------------------------------
   List<MeasurementEntry> getMeasurements() {
     final raw = prefs.getString('measurements');
     if (raw == null) return [];
-    final list = (json.decode(raw) as List).map((e) => MeasurementEntry.fromJson(e as Map<String, dynamic>)).toList();
+    final list = (json.decode(raw) as List)
+        .map((e) => MeasurementEntry.fromJson(e as Map<String, dynamic>))
+        .toList();
     list.sort((a, b) => a.date.compareTo(b.date));
     return list;
   }
 
-  Future<void> setMeasurements(List<MeasurementEntry> list) =>
-      prefs.setString('measurements', json.encode(list.map((e) => e.toJson()).toList()));
+  Future<void> setMeasurements(List<MeasurementEntry> list) => prefs.setString(
+      'measurements', json.encode(list.map((e) => e.toJson()).toList()));
 
   // ---- Backup / export ---------------------------------------------------
   static const _transient = ['onboarding_draft_'];
@@ -136,13 +146,16 @@ class TrackerStore {
       if (_transient.any(key.startsWith)) continue;
       data[key] = prefs.get(key);
     }
-    return const JsonEncoder.withIndent('  ').convert({'app': 'calorie_lens', 'version': 1, 'data': data});
+    return const JsonEncoder.withIndent('  ')
+        .convert({'app': 'calorie_lens', 'version': 1, 'data': data});
   }
 
   /// Throws [FormatException] when the text is not a valid backup.
   Future<void> importJson(String text) async {
     final decoded = json.decode(text);
-    if (decoded is! Map || decoded['app'] != 'calorie_lens' || decoded['data'] is! Map) {
+    if (decoded is! Map ||
+        decoded['app'] != 'calorie_lens' ||
+        decoded['data'] is! Map) {
       throw const FormatException('Not a Calorie Lens backup');
     }
     final data = Map<String, dynamic>.from(decoded['data'] as Map);
@@ -157,22 +170,30 @@ class TrackerStore {
       } else if (v is double) {
         await prefs.setDouble(entry.key, v);
       } else if (v is List) {
-        await prefs.setStringList(entry.key, v.map((e) => e.toString()).toList());
+        await prefs.setStringList(
+            entry.key, v.map((e) => e.toString()).toList());
       }
     }
   }
 
   String exportCsv() {
     String q(String v) => '"${v.replaceAll('"', '""')}"';
-    final rows = <String>['date,time,meal,name,calories,protein_g,carbs_g,fat_g,fiber_g,sugar_g,sodium_mg,quantity_g,note'];
-    final keys = prefs.getKeys().where((k) => k.startsWith('food_log_')).toList()..sort();
+    final rows = <String>[
+      'date,time,meal,name,calories,protein_g,carbs_g,fat_g,fiber_g,sugar_g,sodium_mg,quantity_g,note'
+    ];
+    final keys = prefs
+        .getKeys()
+        .where((k) => k.startsWith('food_log_'))
+        .toList()
+      ..sort();
     for (final key in keys) {
       final raw = prefs.getString(key);
       if (raw == null) continue;
       for (final e in json.decode(raw) as List) {
         final f = FoodItem.fromJson(e as Map<String, dynamic>);
         final t = f.timestamp;
-        final time = '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+        final time =
+            '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
         rows.add([
           dayKey(t),
           time,

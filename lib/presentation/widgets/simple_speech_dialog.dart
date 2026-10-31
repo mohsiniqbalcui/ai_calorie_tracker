@@ -51,13 +51,15 @@ class _SimpleSpeechDialogState extends State<SimpleSpeechDialog> {
 
   void _startListening() async {
     print('Starting to listen...');
-    
+
     if (!_speechService.isInitialized) {
       print('Speech service not initialized, trying to initialize...');
       final available = await _speechService.initialize();
       if (!available) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Speech recognition not available. Please use text input.')),
+          SnackBar(
+              content: Text(
+                  'Speech recognition not available. Please use text input.')),
         );
         return;
       }
@@ -76,7 +78,7 @@ class _SimpleSpeechDialogState extends State<SimpleSpeechDialog> {
       setState(() {
         _recordingTime++;
       });
-      
+
       if (_recordingTime >= 20) {
         print('Timer reached 20 seconds, stopping...');
         _stopListening();
@@ -134,14 +136,17 @@ class _SimpleSpeechDialogState extends State<SimpleSpeechDialog> {
     _stopListening();
     // Add a small delay to ensure stopListening completes
     Future.delayed(Duration(milliseconds: 500), () {
-      final textToCheck = _recognizedText.isNotEmpty ? _recognizedText : _partialText;
+      final textToCheck =
+          _recognizedText.isNotEmpty ? _recognizedText : _partialText;
       if (textToCheck.trim().isNotEmpty) {
         print('Manual submission with text: $textToCheck');
         _handleSubmit();
       } else {
         print('No text recognized, showing message');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('No speech detected. Please try again or use text input.')),
+          SnackBar(
+              content: Text(
+                  'No speech detected. Please try again or use text input.')),
         );
       }
     });
@@ -149,8 +154,9 @@ class _SimpleSpeechDialogState extends State<SimpleSpeechDialog> {
 
   void _handleSubmit() async {
     // Use final recognized text if available, otherwise use partial text
-    final textToSubmit = _recognizedText.isNotEmpty ? _recognizedText : _partialText;
-    
+    final textToSubmit =
+        _recognizedText.isNotEmpty ? _recognizedText : _partialText;
+
     print('=== HANDLE SUBMIT CALLED ===');
     print('Recognized text: "$_recognizedText"');
     print('Partial text: "$_partialText"');
@@ -158,7 +164,7 @@ class _SimpleSpeechDialogState extends State<SimpleSpeechDialog> {
     print('Text length: ${textToSubmit.length}');
     print('Text trimmed: "${textToSubmit.trim()}"');
     print('Text trimmed length: ${textToSubmit.trim().length}');
-    
+
     if (textToSubmit.trim().isEmpty) {
       print('Text is empty, showing error message');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -193,7 +199,8 @@ class _SimpleSpeechDialogState extends State<SimpleSpeechDialog> {
       context: context,
       builder: (context) => TextInputDialog(
         title: 'Add Food Item',
-        hintText: 'Describe the food you ate (e.g., "Grilled chicken breast with rice")',
+        hintText:
+            'Describe the food you ate (e.g., "Grilled chicken breast with rice")',
         onSubmitted: (text) async {
           await widget.onSubmitted(text);
         },
@@ -217,8 +224,8 @@ class _SimpleSpeechDialogState extends State<SimpleSpeechDialog> {
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: Colors.red, width: 2),
               ),
-              child:                   Text(
-                    '${_recordingTime}s / 20s',
+              child: Text(
+                '${_recordingTime}s / 20s',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -228,7 +235,7 @@ class _SimpleSpeechDialogState extends State<SimpleSpeechDialog> {
             ),
             SizedBox(height: 16),
           ],
-          
+
           // Microphone button
           Container(
             width: 100,
@@ -236,13 +243,15 @@ class _SimpleSpeechDialogState extends State<SimpleSpeechDialog> {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: _isListening ? Colors.red : Colors.blue,
-              boxShadow: _isListening ? [
-                BoxShadow(
-                  color: Colors.red.withOpacity(0.3),
-                  blurRadius: 20,
-                  spreadRadius: 5,
-                ),
-              ] : null,
+              boxShadow: _isListening
+                  ? [
+                      BoxShadow(
+                        color: Colors.red.withOpacity(0.3),
+                        blurRadius: 20,
+                        spreadRadius: 5,
+                      ),
+                    ]
+                  : null,
             ),
             child: IconButton(
               icon: Icon(
@@ -250,7 +259,9 @@ class _SimpleSpeechDialogState extends State<SimpleSpeechDialog> {
                 color: Colors.white,
                 size: 50,
               ),
-              onPressed: _isProcessing ? null : (_isListening ? _handleManualStop : _startListening),
+              onPressed: _isProcessing
+                  ? null
+                  : (_isListening ? _handleManualStop : _startListening),
             ),
           ),
           SizedBox(height: 16),
@@ -259,7 +270,7 @@ class _SimpleSpeechDialogState extends State<SimpleSpeechDialog> {
             style: Theme.of(context).textTheme.bodyMedium,
             textAlign: TextAlign.center,
           ),
-          
+
           // Recognized text
           if (_recognizedText.isNotEmpty || _partialText.isNotEmpty) ...[
             SizedBox(height: 16),
@@ -267,7 +278,8 @@ class _SimpleSpeechDialogState extends State<SimpleSpeechDialog> {
               width: double.infinity,
               padding: EdgeInsets.all(12),
               decoration: BoxDecoration(
-                border: Border.all(color: _isListening ? Colors.blue : Colors.grey),
+                border:
+                    Border.all(color: _isListening ? Colors.blue : Colors.grey),
                 borderRadius: BorderRadius.circular(8),
                 color: _isListening ? Colors.blue.withOpacity(0.05) : null,
               ),
@@ -277,17 +289,17 @@ class _SimpleSpeechDialogState extends State<SimpleSpeechDialog> {
                   Text(
                     'Recognized Text:',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey[600],
-                    ),
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey[600],
+                        ),
                   ),
                   SizedBox(height: 4),
                   Text(
                     _recognizedText.isNotEmpty ? _recognizedText : _partialText,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
                   ),
                 ],
               ),
@@ -313,15 +325,15 @@ class _SimpleSpeechDialogState extends State<SimpleSpeechDialog> {
                   Text(
                     'Listening... Speak now',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.orange[700],
-                      fontWeight: FontWeight.w500,
-                    ),
+                          color: Colors.orange[700],
+                          fontWeight: FontWeight.w500,
+                        ),
                   ),
                 ],
               ),
             ),
           ],
-          
+
           // Processing indicator
           if (_isProcessing) ...[
             SizedBox(height: 16),
@@ -335,24 +347,28 @@ class _SimpleSpeechDialogState extends State<SimpleSpeechDialog> {
           child: Text('Cancel'),
         ),
         TextButton(
-          onPressed: _isProcessing ? null : () {
-            Navigator.of(context).pop();
-            _showTextInputDialog();
-          },
+          onPressed: _isProcessing
+              ? null
+              : () {
+                  Navigator.of(context).pop();
+                  _showTextInputDialog();
+                },
           child: Text('Text Input'),
         ),
         ElevatedButton(
-          onPressed: _isProcessing || (_recognizedText.isEmpty && _partialText.isEmpty) ? null : _handleSubmit,
-          child: _isProcessing 
-            ? SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : Text('Add Food'),
+          onPressed:
+              _isProcessing || (_recognizedText.isEmpty && _partialText.isEmpty)
+                  ? null
+                  : _handleSubmit,
+          child: _isProcessing
+              ? SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Text('Add Food'),
         ),
       ],
     );
   }
 }
-
