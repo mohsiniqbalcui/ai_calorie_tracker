@@ -554,7 +554,7 @@ class SearchFoodBar extends StatelessWidget {
       button: true,
       label: 'Search food',
       child: AppCard(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.fromLTRB(16, 4, 8, 4),
         onTap: () => Navigator.push(context,
             MaterialPageRoute(builder: (_) => const FoodSearchScreen())),
         child: Row(
@@ -566,8 +566,12 @@ class SearchFoodBar extends StatelessWidget {
                 child: Text('Search food by name',
                     style: theme.textTheme.bodyLarge
                         ?.copyWith(color: theme.colorScheme.onSurfaceVariant))),
-            Icon(Icons.qr_code_scanner_rounded,
-                size: 22, color: theme.colorScheme.primary),
+            IconButton(
+              tooltip: 'Scan barcode',
+              icon: Icon(Icons.qr_code_scanner_rounded,
+                  size: 24, color: theme.colorScheme.primary),
+              onPressed: () => scanAndLog(context),
+            ),
           ],
         ),
       ),

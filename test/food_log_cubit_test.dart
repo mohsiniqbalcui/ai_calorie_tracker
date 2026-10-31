@@ -8,7 +8,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 Future<FoodLogCubit> _cubit() async {
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
-  return FoodLogCubit(FoodRepository(FoodService(), prefs), TrackerStore(prefs));
+  return FoodLogCubit(
+      FoodRepository(FoodService(), prefs), TrackerStore(prefs));
 }
 
 void main() {
@@ -21,8 +22,20 @@ void main() {
     await c.loadDailyLog();
     expect(c.state.meals, isEmpty);
 
-    await c.addManual(name: 'Oats', calories: 150, protein: 5, carbs: 27, fat: 3, mealType: 'breakfast');
-    await c.addManual(name: 'Egg', calories: 78, protein: 6, carbs: 1, fat: 5, mealType: 'breakfast');
+    await c.addManual(
+        name: 'Oats',
+        calories: 150,
+        protein: 5,
+        carbs: 27,
+        fat: 3,
+        mealType: 'breakfast');
+    await c.addManual(
+        name: 'Egg',
+        calories: 78,
+        protein: 6,
+        carbs: 1,
+        fat: 5,
+        mealType: 'breakfast');
 
     expect(c.state.meals.length, 2);
     expect(c.state.totalCalories, 228);
@@ -50,7 +63,8 @@ void main() {
     final c = await _cubit();
     await c.loadDailyLog();
     await c.addManual(name: 'Pasta', calories: 300, mealType: 'lunch');
-    await c.updateMeal(c.state.meals.single.copyWith(calories: 450, mealType: 'dinner'));
+    await c.updateMeal(
+        c.state.meals.single.copyWith(calories: 450, mealType: 'dinner'));
     expect(c.state.totalCalories, 450);
     expect(c.state.meals.single.mealType, 'dinner');
     await c.close();
@@ -80,7 +94,9 @@ void main() {
     await c.close();
   });
 
-  test('copy yesterday duplicates meals, and reports when there is nothing to copy', () async {
+  test(
+      'copy yesterday duplicates meals, and reports when there is nothing to copy',
+      () async {
     final c = await _cubit();
     await c.loadDailyLog();
     final yesterday = DateTime.now().subtract(const Duration(days: 1));

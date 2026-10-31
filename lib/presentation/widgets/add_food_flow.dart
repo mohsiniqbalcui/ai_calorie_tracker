@@ -256,6 +256,22 @@ class _AddFoodSheetState extends State<_AddFoodSheet> {
                 action(Icons.menu_book_rounded, 'Recipes', _recipes),
               ],
             ),
+            const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.info_outline_rounded,
+                    size: 16, color: theme.colorScheme.onSurfaceVariant),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'AI options (photo, gallery, describe, voice) estimate nutrition and can be wrong. Check and edit the entry after adding it.',
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  ),
+                ),
+              ],
+            ),
             foodChips('Favorites', tracker.favorites),
             foodChips('Recent', tracker.recents),
           ],

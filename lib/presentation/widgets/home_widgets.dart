@@ -7,6 +7,7 @@ import '../cubit/food_log_cubit.dart';
 import '../cubit/settings_cubit.dart';
 import '../cubit/tracker_cubit.dart';
 import '../screens/food_search_screen.dart';
+import '../screens/reminders_screen.dart';
 import '../tools/meal_plan_screen.dart';
 import '../tools/weight_screen.dart';
 import 'common.dart';
@@ -65,6 +66,12 @@ class HomeHeader extends StatelessWidget {
               ),
             ],
           ),
+        ),
+        IconButton(
+          tooltip: 'Reminders',
+          icon: const Icon(Icons.notifications_none_rounded),
+          onPressed: () => Navigator.push(context,
+              MaterialPageRoute(builder: (_) => const RemindersScreen())),
         ),
         ...actions,
       ],

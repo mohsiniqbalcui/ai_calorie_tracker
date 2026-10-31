@@ -8,6 +8,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'data/remote/open_food_facts.dart';
 import 'data/repositories/food_repository.dart';
+import 'data/services/reminder_service.dart';
+import 'presentation/cubit/reminders_cubit.dart';
 import 'data/services/food_service.dart';
 import 'data/local/preference_manager.dart';
 import 'core/theme/app_theme.dart';
@@ -72,12 +74,16 @@ void main() async {
   final foodRepository = FoodRepository(foodService, prefs);
 
   final trackerStore = TrackerStore(prefs);
+  final remindersCubit = RemindersCubit(prefs, ReminderService());
+  // Re-register saved reminders in the background; never block start-up on it.
+  remindersCubit.syncAll();
 
   runApp(MyApp(
     showOnboarding: showOnboarding,
     foodRepository: foodRepository,
     trackerStore: trackerStore,
     settingsCubit: SettingsCubit(prefs),
+    remindersCubit: remindersCubit,
   ));
 }
 
@@ -86,6 +92,7 @@ class MyApp extends StatelessWidget {
   final FoodRepository foodRepository;
   final TrackerStore trackerStore;
   final SettingsCubit settingsCubit;
+  final RemindersCubit remindersCubit;
 
   const MyApp({
     super.key,
@@ -93,6 +100,7 @@ class MyApp extends StatelessWidget {
     required this.foodRepository,
     required this.trackerStore,
     required this.settingsCubit,
+    required this.remindersCubit,
   });
 
   @override
@@ -105,6 +113,7 @@ class MyApp extends StatelessWidget {
       child: MultiBlocProvider(
         providers: [
           BlocProvider.value(value: settingsCubit),
+          BlocProvider.value(value: remindersCubit),
           BlocProvider(
               create: (_) =>
                   FoodLogCubit(foodRepository, trackerStore)..loadDailyLog()),

@@ -20,7 +20,9 @@ class _Harness {
   _Harness(this.settings, this.food, this.tracker, this.app);
 }
 
-Future<_Harness> _build(WidgetTester tester, {Size size = const Size(390, 844), Map<String, Object> prefsValues = const {}}) async {
+Future<_Harness> _build(WidgetTester tester,
+    {Size size = const Size(390, 844),
+    Map<String, Object> prefsValues = const {}}) async {
   tester.view.physicalSize = size * 3;
   tester.view.devicePixelRatio = 3;
   addTearDown(tester.view.reset);
@@ -29,7 +31,8 @@ Future<_Harness> _build(WidgetTester tester, {Size size = const Size(390, 844), 
   final prefs = await SharedPreferences.getInstance();
   final store = TrackerStore(prefs);
   final settings = SettingsCubit(prefs);
-  final food = FoodLogCubit(FoodRepository(FoodService(), prefs), store)..loadDailyLog();
+  final food = FoodLogCubit(FoodRepository(FoodService(), prefs), store)
+    ..loadDailyLog();
   final tracker = TrackerCubit(store);
 
   final app = MultiRepositoryProvider(
@@ -38,7 +41,11 @@ Future<_Harness> _build(WidgetTester tester, {Size size = const Size(390, 844), 
       RepositoryProvider(create: (_) => OpenFoodFactsSource()),
     ],
     child: MultiBlocProvider(
-      providers: [BlocProvider.value(value: settings), BlocProvider.value(value: food), BlocProvider.value(value: tracker)],
+      providers: [
+        BlocProvider.value(value: settings),
+        BlocProvider.value(value: food),
+        BlocProvider.value(value: tracker)
+      ],
       child: BlocBuilder<SettingsCubit, AppSettings>(
         builder: (context, s) => MaterialApp(
           theme: AppTheme.build(s.uiMode, Brightness.light),
@@ -47,7 +54,8 @@ Future<_Harness> _build(WidgetTester tester, {Size size = const Size(390, 844), 
           // The test font (Ahem) is about twice as wide as real fonts, so scale it
           // down to make overflow checks meaningful.
           builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(0.55)),
+            data: MediaQuery.of(context)
+                .copyWith(textScaler: const TextScaler.linear(0.55)),
             child: child!,
           ),
           home: const MainScreen(),
@@ -61,17 +69,22 @@ Future<_Harness> _build(WidgetTester tester, {Size size = const Size(390, 844), 
 }
 
 void main() {
-  testWidgets('Home shows the four meal sections and an empty state', (tester) async {
+  testWidgets('Home shows the four meal sections and an empty state',
+      (tester) async {
     await _build(tester);
     for (final m in ['Breakfast', 'Lunch', 'Dinner', 'Snacks']) {
       expect(find.text(m), findsOneWidget);
     }
-    expect(find.text('Nothing logged yet. Snap a photo or describe your meal to start the day.'), findsOneWidget);
+    expect(
+        find.text(
+            'Nothing logged yet. Snap a photo or describe your meal to start the day.'),
+        findsOneWidget);
     expect(find.text('Add food'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('bottom navigation reaches Diary, Progress and More', (tester) async {
+  testWidgets('bottom navigation reaches Diary, Progress and More',
+      (tester) async {
     await _build(tester);
     expect(find.byType(NavigationDestination), findsNWidgets(4));
 
@@ -90,9 +103,17 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('a logged meal appears on Home and in the Diary with updated totals', (tester) async {
+  testWidgets(
+      'a logged meal appears on Home and in the Diary with updated totals',
+      (tester) async {
     final h = await _build(tester);
-    await h.food.addManual(name: 'Greek yogurt', calories: 120, protein: 12, carbs: 6, fat: 4, mealType: 'breakfast');
+    await h.food.addManual(
+        name: 'Greek yogurt',
+        calories: 120,
+        protein: 12,
+        carbs: 6,
+        fat: 4,
+        mealType: 'breakfast');
     await tester.pumpAndSettle();
     expect(find.text('Greek yogurt'), findsOneWidget);
     expect(find.text('1 item · 120 kcal'), findsOneWidget);
@@ -103,7 +124,8 @@ void main() {
     expect(find.textContaining('120 / '), findsOneWidget);
   });
 
-  testWidgets('Pro mode adds analytics sections to Home and Diary', (tester) async {
+  testWidgets('Pro mode adds analytics sections to Home and Diary',
+      (tester) async {
     final h = await _build(tester);
     expect(find.text('Nutrition details'), findsNothing);
     await h.settings.setUiMode(UiMode.pro);
@@ -115,16 +137,25 @@ void main() {
     expect(find.text('Search this day'), findsOneWidget);
   });
 
-  testWidgets('Add food sheet offers search, barcode, AI and manual options', (tester) async {
+  testWidgets('Add food sheet offers search, barcode, AI and manual options',
+      (tester) async {
     await _build(tester);
     await tester.tap(find.text('Add food'));
     await tester.pumpAndSettle();
-    for (final label in ['Search', 'Scan barcode', 'Photo (AI)', 'Describe (AI)', 'Manual', 'Recipes']) {
+    for (final label in [
+      'Search',
+      'Scan barcode',
+      'Photo (AI)',
+      'Describe (AI)',
+      'Manual',
+      'Recipes'
+    ]) {
       expect(find.text(label), findsOneWidget, reason: label);
     }
   });
 
-  testWidgets('search screen lists built-in foods and filters by typing', (tester) async {
+  testWidgets('search screen lists built-in foods and filters by typing',
+      (tester) async {
     await _build(tester);
     await tester.tap(find.text('Add food'));
     await tester.pumpAndSettle();

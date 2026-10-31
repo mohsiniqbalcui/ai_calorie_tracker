@@ -81,70 +81,85 @@ class _BarcodeScanScreenState extends State<BarcodeScanScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            Container(
-              height: size.height * 0.36,
-              margin: const EdgeInsets.fromLTRB(20, 4, 20, 12),
-              decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(Radii.lg),
-                  color: Colors.black),
-              clipBehavior: Clip.antiAlias,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  MobileScanner(
-                    controller: _scanner,
-                    onDetect: (capture) {
-                      final code = capture.barcodes
-                          .map((b) => b.rawValue)
-                          .whereType<String>()
-                          .firstOrNull;
-                      if (code != null) _lookup(code);
-                    },
-                    errorBuilder: (context, error) =>
-                        _CameraError(error: error),
-                  ),
-                  Center(
-                    child: Container(
-                      width: size.width * 0.62,
-                      height: 110,
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    Container(
+                      height: size.height * 0.36,
+                      margin: const EdgeInsets.fromLTRB(20, 4, 20, 12),
                       decoration: BoxDecoration(
-                        border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.9),
-                            width: 2.5),
-                        borderRadius: BorderRadius.circular(Radii.md),
+                          borderRadius: BorderRadius.circular(Radii.lg),
+                          color: Colors.black),
+                      clipBehavior: Clip.antiAlias,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          MobileScanner(
+                            controller: _scanner,
+                            onDetect: (capture) {
+                              final code = capture.barcodes
+                                  .map((b) => b.rawValue)
+                                  .whereType<String>()
+                                  .firstOrNull;
+                              if (code != null) _lookup(code);
+                            },
+                            errorBuilder: (context, error) =>
+                                _CameraError(error: error),
+                          ),
+                          ValueListenableBuilder<MobileScannerState>(
+                            valueListenable: _scanner,
+                            builder: (context, state, _) => state.error != null
+                                ? const SizedBox.shrink()
+                                : Center(
+                                    child: Container(
+                                      width: size.width * 0.62,
+                                      height: 110,
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                            color: Colors.white
+                                                .withValues(alpha: 0.9),
+                                            width: 2.5),
+                                        borderRadius:
+                                            BorderRadius.circular(Radii.md),
+                                      ),
+                                    ),
+                                  ),
+                          ),
+                          if (_busy)
+                            Container(
+                                color: Colors.black54,
+                                child: const Center(
+                                    child: CircularProgressIndicator())),
+                        ],
                       ),
                     ),
-                  ),
-                  if (_busy)
-                    Container(
-                        color: Colors.black54,
-                        child:
-                            const Center(child: CircularProgressIndicator())),
-                ],
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Text(
+                          'Point the camera at the barcode on the package.',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant)),
+                    ),
+                    if (_message != null)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                        child: Row(children: [
+                          Icon(Icons.info_outline_rounded,
+                              color: theme.colorScheme.error),
+                          const SizedBox(width: 10),
+                          Expanded(
+                              child: Text(_message!,
+                                  style: theme.textTheme.bodyMedium)),
+                        ]),
+                      ),
+                    const SizedBox(height: 12),
+                  ],
+                ),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Text('Point the camera at the barcode on the package.',
-                  style: theme.textTheme.bodyMedium
-                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-            ),
-            if (_message != null)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                child: Row(children: [
-                  Icon(Icons.info_outline_rounded,
-                      color: theme.colorScheme.error),
-                  const SizedBox(width: 10),
-                  Expanded(
-                      child:
-                          Text(_message!, style: theme.textTheme.bodyMedium)),
-                ]),
-              ),
-            const Spacer(),
-            Padding(
-              padding: EdgeInsets.fromLTRB(
-                  20, 8, 20, 16 + MediaQuery.of(context).viewInsets.bottom),
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
               child: Row(
                 children: [
                   Expanded(

@@ -20,6 +20,7 @@ import '../widgets/add_food_flow.dart';
 import '../widgets/common.dart';
 import '../widgets/manual_food_sheet.dart';
 import 'food_search_screen.dart';
+import 'reminders_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -603,6 +604,11 @@ class SettingsScreen extends StatelessWidget {
                 ],
               ),
             ),
+          ]),
+          group('Notifications', [
+            tile(Icons.notifications_active_outlined, 'Meal reminders',
+                subtitle: 'Daily nudges to log your food',
+                onTap: () => _open(context, const RemindersScreen())),
           ]),
           group('Data and privacy', [
             tile(Icons.data_object_rounded, 'Copy backup (JSON)',
