@@ -1,0 +1,17 @@
+rules_version = '2';
+
+// Each signed-in user can read and write only their own backup.
+// Everything else is denied.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid}/backup/{doc} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if request.auth != null
+                   && request.auth.uid == uid
+                   && request.resource.size() < 900 * 1024;
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
