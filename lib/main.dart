@@ -6,7 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'data/cloud/cloud_backend.dart';
 import 'data/remote/open_food_facts.dart';
+import 'presentation/cubit/account_cubit.dart';
 import 'data/repositories/food_repository.dart';
 import 'data/services/reminder_service.dart';
 import 'presentation/cubit/reminders_cubit.dart';
@@ -84,6 +86,7 @@ void main() async {
     trackerStore: trackerStore,
     settingsCubit: SettingsCubit(prefs),
     remindersCubit: remindersCubit,
+    prefs: prefs,
   ));
 }
 
@@ -93,6 +96,7 @@ class MyApp extends StatelessWidget {
   final TrackerStore trackerStore;
   final SettingsCubit settingsCubit;
   final RemindersCubit remindersCubit;
+  final SharedPreferences prefs;
 
   const MyApp({
     super.key,
@@ -101,6 +105,7 @@ class MyApp extends StatelessWidget {
     required this.trackerStore,
     required this.settingsCubit,
     required this.remindersCubit,
+    required this.prefs,
   });
 
   @override
@@ -114,6 +119,8 @@ class MyApp extends StatelessWidget {
         providers: [
           BlocProvider.value(value: settingsCubit),
           BlocProvider.value(value: remindersCubit),
+          BlocProvider(
+              create: (_) => AccountCubit(FirebaseBackend(), prefs)),
           BlocProvider(
               create: (_) =>
                   FoodLogCubit(foodRepository, trackerStore)..loadDailyLog()),

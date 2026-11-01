@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/utils/units.dart';
 import '../../data/local/tracker_store.dart';
 import '../cubit/food_log_cubit.dart';
+import 'account_screen.dart';
 import '../cubit/settings_cubit.dart';
 import '../cubit/tracker_cubit.dart';
 import '../tools/body_metrics_screen.dart';
@@ -604,6 +605,11 @@ class SettingsScreen extends StatelessWidget {
                 ],
               ),
             ),
+          ]),
+          group('Account', [
+            tile(Icons.cloud_sync_outlined, 'Account and backup',
+                subtitle: 'Sign in to back up and restore your data',
+                onTap: () => _open(context, const AccountScreen())),
           ]),
           group('Notifications', [
             tile(Icons.notifications_active_outlined, 'Meal reminders',
