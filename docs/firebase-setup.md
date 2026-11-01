@@ -3,7 +3,7 @@
 The app runs without Firebase. Do these steps to switch on sign-in and backup.
 
 1. **Create a project** at https://console.firebase.google.com and add an iOS app
-   (bundle id `com.foodmonitor.aiCalorieTracker`) and an Android app
+   (bundle id `com.foodmonitor.aicalorietracker`) and an Android app
    (package name from `android/app/build.gradle`, `applicationId`).
 2. **Generate config files** from the project root:
    ```bash
